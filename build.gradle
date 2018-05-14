@@ -336,6 +336,10 @@ configure(globalModule) {
         from new File(project.buildDir, 'release-number')
     }
 
+    entitiesEnhancing {
+        enhanceMain = true
+    }
+
     task filterDummyEntities {
         ext.srcFile1 = file('src/base-persistence.xml')
         ext.srcFile2 = file('src/cuba-persistence.xml')
@@ -504,6 +508,10 @@ configure(coreTestsModule) {
     artifacts {
         archives sourceJar
     }
+
+    entitiesEnhancing {
+        enhanceTest = true
+    }
 }
 
 configure(clientModule) {
@@ -543,6 +551,10 @@ configure(guiModule) {
         compile(bom['org.apache.poi:poi'])
 
         testCompile(clientTestsModule)
+    }
+
+    entitiesEnhancing {
+        enhanceMain = true
     }
 
     test {
@@ -621,6 +633,10 @@ configure(webModule) {
             from sourceSets.main.allJava
             include "com/haulmont/cuba/web/toolkit/ui/client/**"
         }
+    }
+
+    entitiesEnhancing {
+        enhanceMain = true
     }
 
     task buildScssThemes(type: CubaWebScssThemeCreation) {
