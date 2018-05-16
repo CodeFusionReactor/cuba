@@ -18,15 +18,12 @@
 package com.haulmont.cuba.web.widgets.client.datefield;
 
 import com.haulmont.cuba.web.widgets.CubaDateField;
-import com.vaadin.client.ApplicationConnection;
-import com.vaadin.client.UIDL;
 import com.vaadin.client.communication.StateChangeEvent;
-import com.vaadin.client.ui.ShortcutActionHandler;
-import com.vaadin.client.ui.datefield.PopupDateFieldConnector;
+import com.vaadin.client.ui.datefield.PopupDateTimeFieldConnector;
 import com.vaadin.shared.ui.Connect;
 
 @Connect(CubaDateField.class)
-public class CubaDateFieldConnector extends PopupDateFieldConnector {
+public class CubaDateFieldConnector extends PopupDateTimeFieldConnector {
 
     @Override
     public CubaDateFieldWidget getWidget() {

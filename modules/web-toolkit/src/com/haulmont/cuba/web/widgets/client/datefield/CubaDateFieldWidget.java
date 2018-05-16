@@ -21,9 +21,9 @@ import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Event;
 import com.haulmont.cuba.web.widgets.client.textfield.CubaMaskedFieldWidget;
 import com.vaadin.client.ui.ShortcutActionHandler;
-import com.vaadin.client.ui.VPopupCalendar;
+import com.vaadin.client.ui.VPopupTimeCalendar;
 
-public class CubaDateFieldWidget extends VPopupCalendar implements ShortcutActionHandler.ShortcutActionHandlerOwner {
+public class CubaDateFieldWidget extends VPopupTimeCalendar implements ShortcutActionHandler.ShortcutActionHandlerOwner {
 
     protected ShortcutActionHandler shortcutHandler;
 

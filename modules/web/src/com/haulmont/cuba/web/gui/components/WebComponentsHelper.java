@@ -20,7 +20,7 @@ import com.haulmont.cuba.core.global.AppBeans;
 import com.haulmont.cuba.core.global.Configuration;
 import com.haulmont.cuba.gui.components.*;
 import com.haulmont.cuba.gui.components.ComponentContainer;
-import com.haulmont.cuba.gui.components.DateField.Resolution;
+import com.haulmont.cuba.gui.components.DateField;
 import com.haulmont.cuba.gui.components.Formatter;
 import com.haulmont.cuba.gui.components.KeyCombination.Modifier;
 import com.haulmont.cuba.gui.components.TextField;
@@ -38,6 +38,7 @@ import com.vaadin.event.ShortcutAction;
 import com.vaadin.server.*;
 import com.vaadin.server.FileResource;
 import com.vaadin.server.Resource;
+import com.vaadin.shared.ui.datefield.DateResolution;
 import com.vaadin.shared.ui.datefield.DateTimeResolution;
 import com.vaadin.ui.*;
 import com.vaadin.ui.Button;
@@ -414,7 +415,19 @@ public class WebComponentsHelper {
             return false;
     }
 
-    public static DateTimeResolution convertDateFieldResolution(Resolution resolution) {
+    public static DateResolution convertDateResolution(DatePicker.Resolution resolution) {
+        switch (resolution) {
+            case YEAR:
+                return DateResolution.YEAR;
+            case MONTH:
+                return DateResolution.MONTH;
+            case DAY:
+            default:
+                return DateResolution.DAY;
+        }
+    }
+
+    public static DateTimeResolution convertDateTimeResolution(DateField.Resolution resolution) {
         switch (resolution) {
             case SEC:
                 return DateTimeResolution.SECOND;

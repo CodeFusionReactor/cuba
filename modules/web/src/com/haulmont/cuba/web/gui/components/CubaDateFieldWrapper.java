@@ -18,14 +18,10 @@ package com.haulmont.cuba.web.gui.components;
 
 import com.haulmont.cuba.gui.theme.ThemeConstants;
 import com.haulmont.cuba.web.App;
-import com.vaadin.server.AbstractErrorMessage;
-import com.vaadin.server.CompositeErrorMessage;
-import com.vaadin.server.ErrorMessage;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.Layout;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 public class CubaDateFieldWrapper extends com.vaadin.ui.CustomField<LocalDateTime> {
 
@@ -50,7 +46,8 @@ public class CubaDateFieldWrapper extends com.vaadin.ui.CustomField<LocalDateTim
 //        setValidationVisible(false);
 //        setShowBufferedSourceException(false);
 //        setShowErrorForDisabledState(false);
-        setFocusDelegate(dateField.getDateField());
+
+//        setFocusDelegate(dateField.getDateField());
 
         setPrimaryStyleName("c-datefield-composition");
     }
@@ -90,12 +87,12 @@ public class CubaDateFieldWrapper extends com.vaadin.ui.CustomField<LocalDateTim
         return getValue() == null;
     }
 
-    @Override
-    public void focus() {
-        dateField.getDateField().focus();
-    }
+//    @Override
+//    public void focus() {
+//        dateField.getDateField().focus();
+//    }
 
-    @Override
+    /*@Override
     public void setWidth(float width, Unit unit) {
         super.setWidth(width, unit);
 
@@ -112,7 +109,7 @@ public class CubaDateFieldWrapper extends com.vaadin.ui.CustomField<LocalDateTim
                 dateField.getDateField().setWidth("100%");
             }
         }
-    }
+    }*/
 
     @Override
     public void setHeight(float height, Unit unit) {
@@ -127,7 +124,7 @@ public class CubaDateFieldWrapper extends com.vaadin.ui.CustomField<LocalDateTim
         }
     }
 
-    @Override
+    /*@Override
     public void setReadOnly(boolean readOnly) {
         dateField.setEditable(!readOnly);
     }
@@ -135,11 +132,11 @@ public class CubaDateFieldWrapper extends com.vaadin.ui.CustomField<LocalDateTim
     @Override
     public boolean isReadOnly() {
         return !dateField.isEditableWithParent();
-    }
+    }*/
 
-    public void setCompositionReadOnly(boolean readOnly) {
+    /*public void setCompositionReadOnly(boolean readOnly) {
         super.setReadOnly(readOnly);
-    }
+    }*/
 
     // VAADIN8: gg,
     /*@Override
