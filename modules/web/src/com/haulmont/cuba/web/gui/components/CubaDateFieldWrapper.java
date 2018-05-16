@@ -18,17 +18,16 @@ package com.haulmont.cuba.web.gui.components;
 
 import com.haulmont.cuba.gui.theme.ThemeConstants;
 import com.haulmont.cuba.web.App;
-import com.haulmont.cuba.web.gui.components.converters.ObjectToObjectConverter;
 import com.vaadin.server.AbstractErrorMessage;
 import com.vaadin.server.CompositeErrorMessage;
 import com.vaadin.server.ErrorMessage;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.Layout;
-import com.vaadin.v7.data.util.converter.Converter;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
-public class CubaDateFieldWrapper extends com.vaadin.v7.ui.CustomField {
+public class CubaDateFieldWrapper extends com.vaadin.ui.CustomField<LocalDateTime> {
 
     protected final Layout composition;
     protected final WebDateField dateField;
@@ -45,25 +44,26 @@ public class CubaDateFieldWrapper extends com.vaadin.v7.ui.CustomField {
         }
 
         setSizeUndefined();
-        //noinspection unchecked
-        setConverter(new ObjectToObjectConverter());
-
-        setValidationVisible(false);
-        setShowBufferedSourceException(false);
-        setShowErrorForDisabledState(false);
+        // VAADIN8: gg,
+//        setConverter(new ObjectToObjectConverter());
+        // VAADIN8: gg,
+//        setValidationVisible(false);
+//        setShowBufferedSourceException(false);
+//        setShowErrorForDisabledState(false);
         setFocusDelegate(dateField.getDateField());
 
         setPrimaryStyleName("c-datefield-composition");
     }
 
-    @Override
-    protected SourceException getCurrentBufferedSourceException() {
+    // VAADIN8: gg,
+    /*@Override
+    protected Buffered.SourceException getCurrentBufferedSourceException() {
         if (!showBufferedExceptions) {
             return null;
         }
 
         return super.getCurrentBufferedSourceException();
-    }
+    }*/
 
     @Override
     protected Component initContent() {
@@ -75,13 +75,14 @@ public class CubaDateFieldWrapper extends com.vaadin.v7.ui.CustomField {
     }
 
     @Override
-    public Object getValue() {
-        return dateField.getValue();
+    protected void doSetValue(LocalDateTime value) {
+//        dateField.setValue(value);
     }
 
     @Override
-    public void setValue(Object newValue) throws ReadOnlyException, Converter.ConversionException {
-        dateField.setValue(newValue);
+    public LocalDateTime getValue() {
+//        return dateField.getValue();
+        return null;
     }
 
     @Override
@@ -92,11 +93,6 @@ public class CubaDateFieldWrapper extends com.vaadin.v7.ui.CustomField {
     @Override
     public void focus() {
         dateField.getDateField().focus();
-    }
-
-    @Override
-    public Class<?> getType() {
-        return Date.class;
     }
 
     @Override
@@ -145,7 +141,8 @@ public class CubaDateFieldWrapper extends com.vaadin.v7.ui.CustomField {
         super.setReadOnly(readOnly);
     }
 
-    @Override
+    // VAADIN8: gg,
+    /*@Override
     public ErrorMessage getErrorMessage() {
         ErrorMessage superError = super.getErrorMessage();
         if (!isReadOnly() && isRequired() && isEmpty()) {
@@ -156,5 +153,5 @@ public class CubaDateFieldWrapper extends com.vaadin.v7.ui.CustomField {
             }
         }
         return superError;
-    }
+    }*/
 }

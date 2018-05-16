@@ -178,7 +178,7 @@ public class CubaMaskedFieldWidget extends VTextField {
         super.setText(text);
     }
 
-    protected void valueChange(boolean blurred) {
+    public void valueChange(boolean blurred) {
         String newText = getValue();
 
         if (!newText.equals(valueBeforeEdit)) {

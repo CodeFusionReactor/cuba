@@ -22,7 +22,7 @@ import com.vaadin.client.ApplicationConnection;
 import com.vaadin.client.UIDL;
 import com.vaadin.client.communication.StateChangeEvent;
 import com.vaadin.client.ui.ShortcutActionHandler;
-import com.vaadin.v7.client.ui.datefield.PopupDateFieldConnector;
+import com.vaadin.client.ui.datefield.PopupDateFieldConnector;
 import com.vaadin.shared.ui.Connect;
 
 @Connect(CubaDateField.class)
@@ -44,7 +44,8 @@ public class CubaDateFieldConnector extends PopupDateFieldConnector {
         getWidget().getImpl().setMask(getState().dateMask);
     }
 
-    @Override
+    // VAADIN8: gg, how to replace?
+    /*@Override
     public void updateFromUIDL(UIDL uidl, ApplicationConnection client) {
         super.updateFromUIDL(uidl, client);
 
@@ -63,5 +64,5 @@ public class CubaDateFieldConnector extends PopupDateFieldConnector {
                 }
             }
         }
-    }
+    }*/
 }

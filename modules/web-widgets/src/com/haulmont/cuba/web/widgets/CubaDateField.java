@@ -17,33 +17,28 @@
 package com.haulmont.cuba.web.widgets;
 
 import com.haulmont.cuba.web.widgets.client.datefield.CubaDateFieldState;
+import com.vaadin.data.Result;
 import com.vaadin.event.Action;
-import com.vaadin.event.ActionManager;
-import com.vaadin.event.ShortcutListener;
-import com.vaadin.server.PaintException;
-import com.vaadin.server.PaintTarget;
-import com.vaadin.shared.Registration;
-import com.vaadin.v7.data.util.converter.Converter;
-import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-public class CubaDateField extends com.vaadin.v7.ui.DateField implements Action.Container {
+public class CubaDateField extends com.vaadin.ui.DateTimeField implements Action.Container {
 
     /**
      * Keeps track of the Actions added to this component, and manages the
      * painting and handling as well.
      */
-    protected ActionManager shortcutsManager;
+//    protected ActionManager shortcutsManager;
 
     protected String lastInvalidDateString;
 
     protected String dateString;
-
-    private final Date MARKER_DATE = new Date(0);
 
     protected Date prevValue;
 
@@ -62,22 +57,14 @@ public class CubaDateField extends com.vaadin.v7.ui.DateField implements Action.
     }
 
     public void setModified(boolean modified) {
-        if (getState(false).modified != modified) {
-            getState().modified = modified;
-        }
+        // VAADIN8: gg, do we need this?
+//        if (getState(false).modified != modified) {
+//            getState().modified = modified;
+//        }
     }
 
-    @Override
-    protected void setValue(Date newValue, boolean repaintIsNotNeeded) throws Converter.ConversionException {
-        if (newValue == MARKER_DATE)
-            super.setValue(prevValue, true);
-        else {
-            prevValue = newValue;
-            super.setValue(newValue, repaintIsNotNeeded);
-        }
-    }
-
-    @Override
+    // VAADIN8: gg, do we need this method?
+    /*@Override
     public void changeVariables(Object source, Map<String, Object> variables) {
         lastInvalidDateString = (String) variables.get("lastInvalidDateString");
         dateString = (String) variables.get("dateString");
@@ -87,7 +74,8 @@ public class CubaDateField extends com.vaadin.v7.ui.DateField implements Action.
         if (shortcutsManager != null) {
             shortcutsManager.handleActions(variables, this);
         }
-    }
+    }*/
+
 
     @Override
     public void setDateFormat(String dateFormat) {
@@ -97,42 +85,104 @@ public class CubaDateField extends com.vaadin.v7.ui.DateField implements Action.
     }
 
     @Override
-    protected Date handleUnparsableDateString(String dateString) throws Converter.ConversionException {
-        if (Objects.equals(dateString, StringUtils.replaceChars(getState(false).dateMask, "#U", "__"))) {
-            return null;
-        }
+    protected void updateInternal(String newDateString, Map<String, Integer> resolutions) {
+        // CAUTION: copied from AbstractDateField
+        Set<String> resolutionNames = getResolutions().map(Enum::name)
+                .collect(Collectors.toSet());
+        resolutionNames.retainAll(resolutions.keySet());
+        if (!isReadOnly()
+                && (!resolutionNames.isEmpty() || newDateString != null)) {
 
-        markAsDirty();
-        return MARKER_DATE;
+            // Old and new dates
+            final LocalDateTime oldDate = getValue();
+
+            LocalDateTime newDate;
+
+            String mask = StringUtils.replaceChars(getState(false).dateMask, "#U", "__");
+            if ("".equals(newDateString)
+                    || mask.equals(newDateString)) {
+
+                newDate = null;
+            } else {
+                newDate = reconstructDateFromFields(resolutions, oldDate);
+            }
+
+            boolean hasChanges = !Objects.equals(dateString, newDateString)
+                    || !Objects.equals(oldDate, newDate);
+
+            if (hasChanges) {
+                dateString = newDateString;
+                currentParseErrorMessage = null;
+                if (newDateString == null || newDateString.isEmpty()
+                        || mask.equals(newDateString)) {
+                    setValue(newDate, true);
+                } else {
+                    // invalid date string
+                    if (resolutions.isEmpty()) {
+                        Result<LocalDateTime> parsedDate = handleUnparsableDateString(
+                                dateString);
+                        parsedDate.ifOk(v -> setValue(v, true));
+                        if (parsedDate.isError()) {
+                            // TODO: gg, set prevValue
+                            dateString = null;
+                            currentParseErrorMessage = parsedDate
+                                    .getMessage().orElse("Parsing error");
+
+                            if (!isDifferentValue(null)) {
+                                doSetValue(null);
+                            } else {
+                                setValue(null, true);
+                            }
+                        }
+                    } else {
+                        setValue(newDate, true);
+                    }
+                }
+            }
+        }
     }
 
     @Override
+    protected Result<LocalDateTime> handleUnparsableDateString(String dateString) {
+        if (Objects.equals(dateString, StringUtils.replaceChars(getState(false).dateMask, "#U", "__"))) {
+            return Result.ok(null);
+        }
+
+        return Result.error(getParseErrorMessage());
+    }
+
+    // VAADIN8: gg, do we need this method?
+    /*@Override
     public void paintContent(PaintTarget target) throws PaintException {
         super.paintContent(target);
 
         if (shortcutsManager != null) {
             shortcutsManager.paintActions(null, target);
         }
-    }
+    }*/
 
-    @Override
+    // VAADIN8: gg, do we need this method?
+    /*@Override
     protected ActionManager getActionManager() {
         if (shortcutsManager == null) {
             shortcutsManager = new ActionManager(this);
         }
         return shortcutsManager;
-    }
+    }*/
 
-    @Override
+    // VAADIN8: gg, do we need this method?
+    /*@Override
     public Registration addShortcutListener(ShortcutListener listener) {
+        Objects.requireNonNull(listener, "Listener must not be null.");
         getActionManager().addAction(listener);
         return () -> getActionManager().removeAction(listener);
-    }
+    }*/
 
-    @Override
+    // VAADIN8: gg, remove?
+    /*@Override
     public void removeShortcutListener(ShortcutListener listener) {
         getActionManager().removeAction(listener);
-    }
+    }*/
 
     @Override
     public void addActionHandler(Action.Handler actionHandler) {

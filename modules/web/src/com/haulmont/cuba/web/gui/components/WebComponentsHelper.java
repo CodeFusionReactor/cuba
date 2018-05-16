@@ -20,6 +20,7 @@ import com.haulmont.cuba.core.global.AppBeans;
 import com.haulmont.cuba.core.global.Configuration;
 import com.haulmont.cuba.gui.components.*;
 import com.haulmont.cuba.gui.components.ComponentContainer;
+import com.haulmont.cuba.gui.components.DateField.Resolution;
 import com.haulmont.cuba.gui.components.Formatter;
 import com.haulmont.cuba.gui.components.KeyCombination.Modifier;
 import com.haulmont.cuba.gui.components.TextField;
@@ -34,16 +35,15 @@ import com.haulmont.cuba.web.widgets.*;
 import com.haulmont.cuba.web.widgets.data.AggregationContainer;
 import com.vaadin.event.Action;
 import com.vaadin.event.ShortcutAction;
-import com.vaadin.event.ShortcutListener;
 import com.vaadin.server.*;
 import com.vaadin.server.FileResource;
 import com.vaadin.server.Resource;
+import com.vaadin.shared.ui.datefield.DateTimeResolution;
 import com.vaadin.ui.*;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.TabSheet;
 import com.vaadin.v7.shared.ui.combobox.FilteringMode;
-import com.vaadin.v7.shared.ui.datefield.Resolution;
 import com.vaadin.v7.ui.Table;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
@@ -414,26 +414,26 @@ public class WebComponentsHelper {
             return false;
     }
 
-    public static Resolution convertDateFieldResolution(com.haulmont.cuba.gui.components.DateField.Resolution resolution) {
+    public static DateTimeResolution convertDateFieldResolution(Resolution resolution) {
         switch (resolution) {
             case SEC:
-                return Resolution.SECOND;
+                return DateTimeResolution.SECOND;
 
             case HOUR:
-                return Resolution.HOUR;
+                return DateTimeResolution.HOUR;
 
             case DAY:
-                return Resolution.DAY;
+                return DateTimeResolution.DAY;
 
             case MONTH:
-                return Resolution.MONTH;
+                return DateTimeResolution.MONTH;
 
             case YEAR:
-                return Resolution.YEAR;
+                return DateTimeResolution.YEAR;
 
             case MIN:
             default:
-                return Resolution.MINUTE;
+                return DateTimeResolution.MINUTE;
         }
     }
 
