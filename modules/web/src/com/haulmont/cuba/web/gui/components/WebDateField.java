@@ -34,7 +34,6 @@ import com.haulmont.cuba.gui.components.data.EntityValueSource;
 import com.haulmont.cuba.gui.components.data.ValueSource;
 import com.haulmont.cuba.gui.components.data.value.DatasourceValueSource;
 import com.haulmont.cuba.gui.theme.ThemeConstants;
-import com.haulmont.cuba.security.global.UserSession;
 import com.haulmont.cuba.web.App;
 import com.haulmont.cuba.web.AppUI;
 import com.haulmont.cuba.web.widgets.CubaDateField;
@@ -43,6 +42,7 @@ import com.vaadin.shared.ui.datefield.DateTimeResolution;
 import com.vaadin.ui.Layout;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -50,9 +50,8 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.function.Consumer;
 
-@SuppressWarnings("WeakerAccess") // TODO: gg, remove
 public class WebDateField<V extends Date> extends WebAbstractViewComponent<Layout, LocalDateTime, V>
-        implements DateField<V> {
+        implements DateField<V>, InitializingBean {
 
     protected Resolution resolution;
 
@@ -66,9 +65,6 @@ public class WebDateField<V extends Date> extends WebAbstractViewComponent<Layou
     protected String timeFormat;
 
     protected TimeZone timeZone;
-
-    // TODO: gg, replace
-    protected UserSession userSession;
 
     //    protected boolean buffered = false;
     protected boolean updateTimeFieldResolution = false;
@@ -86,21 +82,22 @@ public class WebDateField<V extends Date> extends WebAbstractViewComponent<Layou
         }
 
         dateField = new CubaDateField();
-
-        UserSessionSource sessionSource = AppBeans.get(UserSessionSource.NAME);
-        userSession = sessionSource.getUserSession();
-
-        Locale locale = userSession.getLocale();
-        dateField.setDateFormat(Datatypes.getFormatStringsNN(locale).getDateFormat());
-        dateField.setResolution(DateTimeResolution.DAY);
-
         timeField = new WebTimeField();
 
         dateField.addValueChangeListener(createDateValueChangeListener());
         timeField.addValueChangeListener(createTimeValueChangeListener());
-        setResolution(Resolution.MIN);
     }
 
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        UserSessionSource userSessionSource = applicationContext.getBean(UserSessionSource.class);
+        Locale locale = userSessionSource.getLocale();
+
+        dateField.setDateFormat(Datatypes.getFormatStringsNN(locale).getDateFormat());
+        dateField.setResolution(DateTimeResolution.DAY);
+
+        setResolution(Resolution.MIN);
+    }
 
     protected HasValue.ValueChangeListener<LocalDateTime> createDateValueChangeListener() {
         return e -> {
