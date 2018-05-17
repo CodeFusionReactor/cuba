@@ -29,6 +29,7 @@ import com.haulmont.cuba.gui.components.data.value.DatasourceValueSource;
 import com.haulmont.cuba.gui.theme.ThemeConstants;
 import com.haulmont.cuba.web.App;
 import com.haulmont.cuba.web.widgets.CubaMaskedTextField;
+import com.haulmont.cuba.web.widgets.CubaTimeField;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -52,7 +53,7 @@ public class WebTimeField extends WebV8AbstractField<CubaMaskedTextField, String
 
         component = new CubaMaskedTextField();
         component.setMaskedMode(true);
-        component.setTimeMask(true);
+//        component.setTimeMask(true);
 
         attachValueChangeListener(component);
 

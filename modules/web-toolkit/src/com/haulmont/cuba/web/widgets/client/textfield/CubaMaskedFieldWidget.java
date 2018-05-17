@@ -59,8 +59,6 @@ public class CubaMaskedFieldWidget extends VTextField {
     protected boolean shiftPressed = false;
     protected int shiftPressPos = -1;
 
-    protected boolean isTimeMask = false;
-
     protected String valueBeforeEdit;
 
     public CubaMaskedFieldWidget() {
@@ -121,10 +119,6 @@ public class CubaMaskedFieldWidget extends VTextField {
         this.maskedMode = maskedMode;
     }
 
-    public void setTimeMask(boolean isTimeMask) {
-        this.isTimeMask = isTimeMask;
-    }
-
     public boolean isSendNullRepresentation() {
         return sendNullRepresentation;
     }
@@ -182,12 +176,6 @@ public class CubaMaskedFieldWidget extends VTextField {
         String newText = getValue();
 
         if (!newText.equals(valueBeforeEdit)) {
-            if (isTimeMask) {
-                newText = (newText.endsWith("__") && !newText.startsWith("__"))
-                        ? newText.replaceAll("__", "00")
-                        : newText;
-            }
-
             if (validateText(newText)) {
                 valueBeforeEdit = newText;
                 setValue(newText);
