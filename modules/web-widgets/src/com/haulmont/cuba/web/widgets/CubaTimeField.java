@@ -27,8 +27,10 @@ import org.apache.commons.lang.StringUtils;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
+import java.util.Comparator;
 import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CubaTimeField extends AbstractField<LocalTime> {
 
@@ -94,13 +96,15 @@ public class CubaTimeField extends AbstractField<LocalTime> {
         return this.value;
     }
 
+    public String getTimeFormat() {
+        return this.timeFormat;
+    }
 
     public void setTimeFormat(String timeFormat) {
         // TODO: gg, to do to do do to do to do
         this.timeFormat = timeFormat;
 
         updateTimeFormat();
-        updateWidth();
     }
 
     protected void updateTimeFormat() {
@@ -109,13 +113,50 @@ public class CubaTimeField extends AbstractField<LocalTime> {
         getState().mask = mask;
     }
 
-    protected void updateWidth() {
-        // TODO: gg, implement
+    public TimeResolution getResolution() {
+        return resolution;
+    }
+
+    public void setResolution(TimeResolution resolution) {
+        this.resolution = resolution;
+        updateResolution();
+    }
+
+    protected void updateResolution() {
+
+        String timeFormat = getResolutionsHigherOrEqualTo(this.resolution)
+                .map(this::getResolutionFormat)
+                .collect(Collectors.joining(":"));
+
+        this.timeFormat = timeFormat;
+        updateTimeFormat();
+    }
+
+    protected Stream<TimeResolution> getResolutionsHigherOrEqualTo(TimeResolution resolution) {
+        return Stream.of(TimeResolution.values())
+                .skip(resolution.ordinal())
+                .sorted(Comparator.reverseOrder());
+    }
+
+    protected String getResolutionFormat(TimeResolution resolution) {
+//        checkNotNull(resolution, "Resolution can't be null");
+
+        switch (resolution) {
+            case HOUR:
+                return "HH";
+            case MINUTE:
+                return "mm";
+            case SECOND:
+                return "ss";
+            default:
+                throw new IllegalArgumentException("Cannot detect resolution type");
+        }
     }
 
     protected LocalTime parseValue(String text) {
         if (StringUtils.isNotEmpty(text) && !text.equals(placeholder)) {
-            return LocalTime.parse(text);
+            DateTimeFormatter dateTimeFormatter = getDateTimeFormatter();
+            return LocalTime.parse(text, dateTimeFormatter);
         } else {
             return null;
         }
@@ -126,11 +167,16 @@ public class CubaTimeField extends AbstractField<LocalTime> {
             return "";
         }
 
+        DateTimeFormatter dateTimeFormatter = getDateTimeFormatter();
+        return value.format(dateTimeFormatter);
+    }
+
+    protected DateTimeFormatter getDateTimeFormatter() {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(timeFormat);
         Locale locale = getLocale();
         if (locale != null) {
             dateTimeFormatter = dateTimeFormatter.withLocale(locale);
         }
-        return value.format(dateTimeFormatter);
+        return dateTimeFormatter;
     }
 }

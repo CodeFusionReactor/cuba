@@ -116,65 +116,69 @@ public class WebTimeField extends WebV8AbstractField<CubaMaskedTextField, String
     }
 
     // VAADIN8: gg, do we need this method?
-    protected boolean checkStringValue(String value) {
-        if (value.equals(placeholder) || StringUtils.isEmpty(value))
-            return true;
-        SimpleDateFormat sdf = new SimpleDateFormat(timeFormat);
-        sdf.setLenient(false);
-        try {
-            sdf.parse(value);
-            return true;
-        } catch (ParseException e) {
-            return false;
-        }
-    }
+//    protected boolean checkStringValue(String value) {
+//        if (value.equals(placeholder) || StringUtils.isEmpty(value))
+//            return true;
+//        SimpleDateFormat sdf = new SimpleDateFormat(timeFormat);
+//        sdf.setLenient(false);
+//        try {
+//            sdf.parse(value);
+//            return true;
+//        } catch (ParseException e) {
+//            return false;
+//        }
+//    }
 
     @Override
     protected Date convertToModel(String componentRawValue) throws ConversionException {
-        if (StringUtils.isNotEmpty(componentRawValue) && !componentRawValue.equals(placeholder)) {
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat(timeFormat);
-                sdf.setLenient(false);
-
-                Date date = sdf.parse(componentRawValue);
-                if (component.getComponentError() != null) {
-                    component.setComponentError(null);
-                }
-
-                ValueSource<Date> valueSource = getValueSource();
-                if (valueSource instanceof EntityValueSource) {
-                    MetaPropertyPath metaPropertyPath = ((DatasourceValueSource) valueSource).getMetaPropertyPath();
-                    MetaProperty metaProperty = metaPropertyPath.getMetaProperty();
-                    if (metaProperty != null) {
-                        Class javaClass = metaProperty.getRange().asDatatype().getJavaClass();
-                        if (javaClass.equals(java.sql.Time.class)) {
-                            return new Time(date.getTime());
-                        }
-                        if (javaClass.equals(java.sql.Date.class)) {
-                            LoggerFactory.getLogger(WebTimeField.class).warn("Do not use java.sql.Date with time field");
-                            return new java.sql.Date(date.getTime());
-                        }
-                    }
-                }
-                return date;
-            } catch (Exception e) {
-                LoggerFactory.getLogger(WebTimeField.class)
-                        .debug("Unable to parse value of component {}:\n{}", getId(), e.getMessage());
-                throw new ConversionException("Invalid value");
-            }
-        } else {
-            return null;
-        }
+        // TODO: gg, implement
+//        if (StringUtils.isNotEmpty(componentRawValue) && !componentRawValue.equals(placeholder)) {
+//            try {
+//                SimpleDateFormat sdf = new SimpleDateFormat(timeFormat);
+//                sdf.setLenient(false);
+//
+//                Date date = sdf.parse(componentRawValue);
+//                if (component.getComponentError() != null) {
+//                    component.setComponentError(null);
+//                }
+//
+//                ValueSource<Date> valueSource = getValueSource();
+//                if (valueSource instanceof EntityValueSource) {
+//                    MetaPropertyPath metaPropertyPath = ((DatasourceValueSource) valueSource).getMetaPropertyPath();
+//                    MetaProperty metaProperty = metaPropertyPath.getMetaProperty();
+//                    if (metaProperty != null) {
+//                        Class javaClass = metaProperty.getRange().asDatatype().getJavaClass();
+//                        if (javaClass.equals(java.sql.Time.class)) {
+//                            return new Time(date.getTime());
+//                        }
+//                        if (javaClass.equals(java.sql.Date.class)) {
+//                            LoggerFactory.getLogger(WebTimeField.class).warn("Do not use java.sql.Date with time field");
+//                            return new java.sql.Date(date.getTime());
+//                        }
+//                    }
+//                }
+//                return date;
+//            } catch (Exception e) {
+//                LoggerFactory.getLogger(WebTimeField.class)
+//                        .debug("Unable to parse value of component {}:\n{}", getId(), e.getMessage());
+//                throw new ConversionException("Invalid value");
+//            }
+//        } else {
+//            return null;
+//        }
+        return null;
     }
 
     @Override
     protected String convertToPresentation(Date modelValue) throws ConversionException {
-        if (modelValue != null) {
-            SimpleDateFormat sdf = new SimpleDateFormat(timeFormat);
-            return sdf.format(modelValue);
-        } else {
-            return "";
-        }
+        // TODO: gg, implement
+//        if (modelValue != null) {
+//            SimpleDateFormat sdf = new SimpleDateFormat(timeFormat);
+//            return sdf.format(modelValue);
+//        } else {
+//            return "";
+//        }
+        return "";
     }
 
     @Override
@@ -184,10 +188,12 @@ public class WebTimeField extends WebV8AbstractField<CubaMaskedTextField, String
 
     @Override
     public void setFormat(String format) {
-        timeFormat = format;
-        showSeconds = timeFormat.contains("ss");
-        updateTimeFormat();
-        updateWidth();
+        // TODO: gg, implement
+//        timeFormat = format;
+//        showSeconds = timeFormat.contains("ss");
+//        updateTimeFormat();
+
+//        updateWidth();
     }
 
     @Override
@@ -196,100 +202,55 @@ public class WebTimeField extends WebV8AbstractField<CubaMaskedTextField, String
     }
 
     public void setResolution(DateField.Resolution resolution) {
-        this.resolution = resolution;
-        if (resolution.ordinal() <= DateField.Resolution.SEC.ordinal()) {
-            setShowSeconds(true);
-        } else if (resolution.ordinal() <= DateField.Resolution.MIN.ordinal()) {
-            setShowSeconds(false);
-        } else if (resolution.ordinal() <= DateField.Resolution.HOUR.ordinal()) {
-            StringBuilder builder = new StringBuilder(timeFormat);
-            if (timeFormat.contains("mm")) {
-                int minutesIndex = builder.indexOf("mm");
-                builder.delete(minutesIndex > 0 ? --minutesIndex : minutesIndex, minutesIndex + 3);
-                timeFormat = builder.toString();
-            }
-            setShowSeconds(false);
-        }
+        // TODO: gg, implement
+
+//        this.resolution = resolution;
+//        if (resolution.ordinal() <= DateField.Resolution.SEC.ordinal()) {
+//            setShowSeconds(true);
+//        } else if (resolution.ordinal() <= DateField.Resolution.MIN.ordinal()) {
+//            setShowSeconds(false);
+//        } else if (resolution.ordinal() <= DateField.Resolution.HOUR.ordinal()) {
+//            StringBuilder builder = new StringBuilder(timeFormat);
+//            if (timeFormat.contains("mm")) {
+//                int minutesIndex = builder.indexOf("mm");
+//                builder.delete(minutesIndex > 0 ? --minutesIndex : minutesIndex, minutesIndex + 3);
+//                timeFormat = builder.toString();
+//            }
+//            setShowSeconds(false);
+//        }
     }
 
     @Override
     public void setShowSeconds(boolean showSeconds) {
-        this.showSeconds = showSeconds;
-        if (showSeconds) {
-            if (!timeFormat.contains("ss")) {
-                int minutesIndex = timeFormat.indexOf("mm");
-                StringBuilder builder = new StringBuilder(timeFormat);
-                builder.insert(minutesIndex + 2, ":ss");
-                timeFormat = builder.toString();
-            }
-        } else {
-            if (timeFormat.contains("ss")) {
-                int secondsIndex = timeFormat.indexOf("ss");
-                StringBuilder builder = new StringBuilder(timeFormat);
-                builder.delete(secondsIndex > 0 ? --secondsIndex : secondsIndex, secondsIndex + 3);
-                timeFormat = builder.toString();
-            }
-        }
-        updateTimeFormat();
-        updateWidth();
+        // TODO: gg, implement
+//        this.showSeconds = showSeconds;
+//        if (showSeconds) {
+//            if (!timeFormat.contains("ss")) {
+//                int minutesIndex = timeFormat.indexOf("mm");
+//                StringBuilder builder = new StringBuilder(timeFormat);
+//                builder.insert(minutesIndex + 2, ":ss");
+//                timeFormat = builder.toString();
+//            }
+//        } else {
+//            if (timeFormat.contains("ss")) {
+//                int secondsIndex = timeFormat.indexOf("ss");
+//                StringBuilder builder = new StringBuilder(timeFormat);
+//                builder.delete(secondsIndex > 0 ? --secondsIndex : secondsIndex, secondsIndex + 3);
+//                timeFormat = builder.toString();
+//            }
+//        }
+//        updateTimeFormat();
+//        updateWidth();
     }
 
     protected void updateTimeFormat() {
-        String mask = StringUtils.replaceChars(timeFormat, "Hhmsa", "####U");
-        placeholder = StringUtils.replaceChars(mask, "#U", "__");
-        component.setMask(mask);
+        // TODO: gg, implement
+//        String mask = StringUtils.replaceChars(timeFormat, "Hhmsa", "####U");
+//        placeholder = StringUtils.replaceChars(mask, "#U", "__");
+//        component.setMask(mask);
 //        vaadin8
 //        component.setNullRepresentation(placeholder);
     }
-
-//        vaadin8
-/* todo
-    @Override
-    protected ItemWrapper createDatasourceWrapper(Datasource datasource, Collection<MetaPropertyPath> propertyPaths) {
-        return new ItemWrapper(datasource, datasource.getMetaClass(), propertyPaths) {
-            private static final long serialVersionUID = 1729450322469573679L;
-
-            @Override
-            protected PropertyWrapper createPropertyWrapper(Object item, MetaPropertyPath propertyPath) {
-                return new PropertyWrapper(item, propertyPath) {
-                    private static final long serialVersionUID = -4481934193197224070L;
-
-                    @Override
-                    public String getFormattedValue() {
-                        Object value = this.getValue();
-                        if (value instanceof Date) {
-                            SimpleDateFormat sdf = new SimpleDateFormat(timeFormat);
-                            return sdf.format(value);
-                        }
-
-                        return super.getFormattedValue();
-                    }
-
-                    @Override
-                    protected Object valueOf(Object newValue) throws Converter.ConversionException {
-                        if (newValue instanceof String) {
-                            if (StringUtils.isNotEmpty((String) newValue) && !newValue.equals(placeholder)) {
-                                try {
-                                    SimpleDateFormat sdf = new SimpleDateFormat(timeFormat);
-                                    Date date = sdf.parse((String) newValue);
-                                    if (component.getComponentError() != null) {
-                                        component.setComponentError(null);
-                                    }
-                                    return date;
-                                } catch (Exception e) {
-                                    LoggerFactory.getLogger(WebTimeField.class).debug("Unable to parse value of component " + getId() + "\n" + e.getMessage());
-                                    component.setComponentError(new UserError("Invalid value"));
-                                    return null;
-                                }
-                            } else
-                                return null;
-                        } else
-                            return newValue;
-                    }
-                };
-            }
-        };
-    }*/
 
     @Override
     public int getTabIndex() {
