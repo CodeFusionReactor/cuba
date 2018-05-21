@@ -34,7 +34,6 @@ import com.haulmont.cuba.gui.data.GroupInfo;
 import com.haulmont.cuba.gui.data.impl.CollectionDsListenersWrapper;
 import com.haulmont.cuba.web.gui.data.CollectionDsWrapper;
 import com.haulmont.cuba.web.gui.data.ItemWrapper;
-import com.haulmont.cuba.web.gui.data.PropertyWrapper;
 import com.haulmont.cuba.web.gui.data.SortableCollectionDsWrapper;
 import com.haulmont.cuba.web.widgets.CubaGroupTable;
 import com.haulmont.cuba.web.widgets.data.AggregationContainer;
@@ -69,6 +68,7 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
     protected void initComponent(CubaGroupTable component) {
         super.initComponent(component);
 
+        // vaadin8 replace with method reference
         component.setGroupPropertyValueFormatter(new AggregatableGroupPropertyValueFormatter());
     }
 
@@ -171,7 +171,7 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
             for (Object o : elements) {
                 String id = ((Element) o).attributeValue("id");
                 MetaPropertyPath property = DynamicAttributesUtils.isDynamicAttribute(id)
-                        ? DynamicAttributesUtils.getMetaPropertyPath(getDatasource().getMetaClass(), id)
+                        ? dynamicAttributesTools.getMetaPropertyPath(getDatasource().getMetaClass(), id)
                         : getDatasource().getMetaClass().getPropertyPath(id);
 
                 if (property != null) {
@@ -476,16 +476,6 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
                     }
                 }
             }
-        }
-
-        @Override
-        protected ItemWrapper createItemWrapper(Object item) {
-            return new ItemWrapper(item, datasource.getMetaClass(), properties) {
-                @Override
-                protected PropertyWrapper createPropertyWrapper(Object item, MetaPropertyPath propertyPath) {
-                    return new TablePropertyWrapper(item, propertyPath);
-                }
-            };
         }
 
         @Override
@@ -813,7 +803,7 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
                 LinkedList<Object> result = new LinkedList<>();
                 //noinspection unchecked
                 List<GroupInfo> roots = ((GroupDatasource) datasource).rootGroups();
-                for (final GroupInfo root : roots) {
+                for (GroupInfo root : roots) {
                     result.add(root);
                     collectItemIds(root, result);
                 }
@@ -915,7 +905,6 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
     }
 
     protected class DefaultGroupPropertyValueFormatter implements CubaGroupTable.GroupPropertyValueFormatter {
-
         @SuppressWarnings("unchecked")
         @Override
         public String format(Object groupId, @Nullable Object value) {
@@ -941,7 +930,6 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
                 }
             }
 
-            MetadataTools metadataTools = AppBeans.get(MetadataTools.NAME);
             return metadataTools.format(value, propertyPath.getMetaProperty());
         }
     }
@@ -963,23 +951,5 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
         super.addColumn(column);
 
         setColumnGroupAllowed(column, column.isGroupAllowed());
-    }
-
-    public class GroupTableCollectionDsListenersWrapper extends TableCollectionDsListenersWrapper {
-        @Override
-        protected void handleAggregation() {
-            super.handleAggregation();
-
-            if (isAggregatable() && aggregationCells != null) {
-                if (getDatasource() != null) {
-                    GroupDatasource groupDs = getDatasource();
-                    @SuppressWarnings("unchecked")
-                    Collection<GroupInfo> roots = groupDs.rootGroups();
-                    for (GroupInfo root : roots) {
-                        component.aggregate(new CubaGroupTable.GroupAggregationContext(component, root));
-                    }
-                }
-            }
-        }
     }
 }

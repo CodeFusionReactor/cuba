@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package com.haulmont.cuba.gui.components.data;
+package com.haulmont.cuba.web.gui.components.table;
 
-import com.haulmont.chile.core.model.MetaClass;
-import com.haulmont.chile.core.model.MetaPropertyPath;
-import com.haulmont.cuba.core.entity.Entity;
+import com.haulmont.cuba.gui.components.data.TableSource;
 
-import java.util.Collection;
+public interface TableSourceEventsDelegate<I> {
+    void tableSourceItemSetChanged(TableSource.ItemSetChangeEvent<I> event);
 
-// todo JavaDoc
-public interface EntityTableSource<E extends Entity> extends TableSource<E> {
-    MetaClass getMetaClass();
+    void tableSourcePropertyValueChanged(TableSource.ValueChangeEvent<I> event);
 
-    // todo rename
-    Collection<MetaPropertyPath> getAutowiredProperties();
+    void tableSourceStateChanged(TableSource.StateChangeEvent<I> event);
+
+    void tableSourceSelectedItemChanged(TableSource.SelectedItemChangeEvent<I> event);
 }

@@ -846,16 +846,6 @@ public class WebDataGrid<E extends Entity> extends WebAbstractComponent<CubaGrid
     }
 
     @Override
-    public String getDescription() {
-        return component.getDescription();
-    }
-
-    @Override
-    public void setDescription(String description) {
-        component.setDescription(description);
-    }
-
-    @Override
     public boolean isTextSelectionEnabled() {
         return textSelectionEnabled;
     }

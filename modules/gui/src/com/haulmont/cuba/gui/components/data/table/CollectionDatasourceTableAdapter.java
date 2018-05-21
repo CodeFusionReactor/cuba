@@ -48,12 +48,17 @@ public class CollectionDatasourceTableAdapter<E extends Entity<K>, K> implements
         this.datasource.addStateChangeListener(this::datasourceStateChanged);
         this.datasource.addItemPropertyChangeListener(this::datasourceItemPropertyChanged);
         this.datasource.addCollectionChangeListener(this::datasourceCollectionChanged);
+        this.datasource.addItemChangeListener(this::datasourceItemChanged);
 
         CollectionDsHelper.autoRefreshInvalid(datasource, true);
 
         if (datasource.getState() == Datasource.State.VALID) {
             setState(BindingState.ACTIVE);
         }
+    }
+
+    protected void datasourceItemChanged(Datasource.ItemChangeEvent event) {
+        events.publish(SelectedItemChangeEvent.class, new SelectedItemChangeEvent<>(this, (E)event.getItem()));
     }
 
     protected void datasourceCollectionChanged(@SuppressWarnings("unused") CollectionDatasource.CollectionChangeEvent<E, K> e) {
@@ -113,7 +118,7 @@ public class CollectionDatasourceTableAdapter<E extends Entity<K>, K> implements
 
     @Override
     public void setItemValue(Object itemId, Object propertyId, Object newValue) {
-        // todo
+        // vaadin8 todo
         throw new NotImplementedException("todo");
     }
 
@@ -160,12 +165,17 @@ public class CollectionDatasourceTableAdapter<E extends Entity<K>, K> implements
     }
 
     @Override
+    public Subscription addSelectedItemChangeListener(Consumer<SelectedItemChangeEvent<E>> listener) {
+        return events.subscribe(SelectedItemChangeEvent.class, (Consumer)listener);
+    }
+
+    @Override
     public MetaClass getMetaClass() {
         return datasource.getMetaClass();
     }
 
     @Override
-    public Collection<MetaPropertyPath> getAutowiredPaths() {
+    public Collection<MetaPropertyPath> getAutowiredProperties() {
         MetadataTools metadataTools = AppBeans.get(MetadataTools.class);
 
         return datasource.getView() != null ?

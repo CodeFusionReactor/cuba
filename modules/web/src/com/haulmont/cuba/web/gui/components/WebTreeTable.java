@@ -247,16 +247,6 @@ public class WebTreeTable<E extends Entity> extends WebAbstractTable<CubaTreeTab
             }
         }
 
-        @Override
-        protected ItemWrapper createItemWrapper(Object item) {
-            return new ItemWrapper(item, datasource.getMetaClass(), properties) {
-                @Override
-                protected PropertyWrapper createPropertyWrapper(Object item, MetaPropertyPath propertyPath) {
-                    return new TablePropertyWrapper(item, propertyPath);
-                }
-            };
-        }
-
         @SuppressWarnings("unchecked")
         @Override
         public boolean isCaption(Object itemId) {

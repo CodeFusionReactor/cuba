@@ -43,7 +43,7 @@ public interface TableSource<I> {
     }
 
     Object getItemValue(Object itemId, Object propertyId);
-    void setItemValue(Object itemId, Object propertyId, Object newValue);
+    void setItemValue(Object itemId, Object propertyId, Object newValue); // vaadin8 todo is not required
 
     int size();
 
@@ -55,9 +55,14 @@ public interface TableSource<I> {
 
     boolean supportsProperty(Object propertyId);
 
+    @Nullable
+    I getSelectedItem();
+    void setSelectedItem(@Nullable I item);
+
     Subscription addStateChangeListener(Consumer<TableSource.StateChangeEvent<I>> listener);
     Subscription addValueChangeListener(Consumer<TableSource.ValueChangeEvent<I>> listener);
     Subscription addItemSetChangeListener(Consumer<TableSource.ItemSetChangeEvent<I>> listener);
+    Subscription addSelectedItemChangeListener(Consumer<SelectedItemChangeEvent<I>> listener);
 
     interface Ordered<T> extends TableSource<T> {
         Object nextItemId(Object itemId);
@@ -133,6 +138,26 @@ public interface TableSource<I> {
         @Override
         public TableSource<T> getSource() {
             return (TableSource<T>) super.getSource();
+        }
+    }
+
+    // todo
+    class SelectedItemChangeEvent<T> extends EventObject {
+        protected final T selectedItem;
+
+        public SelectedItemChangeEvent(TableSource<T> source, T selectedItem) {
+            super(source);
+            this.selectedItem = selectedItem;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public TableSource<T> getSource() {
+            return (TableSource<T>) super.getSource();
+        }
+
+        public T getSelectedItem() {
+            return selectedItem;
         }
     }
 }

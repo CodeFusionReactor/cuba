@@ -25,8 +25,8 @@ import java.util.Collection;
 @SuppressWarnings("deprecation")
 public class SortableDataContainer<I> extends TableDataContainer<I> implements Container.Sortable {
 
-    public SortableDataContainer(TableSource.Sortable<I> tableDataSource) {
-        super(tableDataSource);
+    public SortableDataContainer(TableSource.Sortable<I> tableDataSource, TableSourceEventsDelegate<I> dataEventsDelegate) {
+        super(tableDataSource, dataEventsDelegate);
     }
 
     @Override

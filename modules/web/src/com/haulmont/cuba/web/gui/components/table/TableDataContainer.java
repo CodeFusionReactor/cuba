@@ -33,6 +33,7 @@ public class TableDataContainer<I> implements Container, ItemSetChangeNotifier {
     protected static final Property.ValueChangeEvent VOID_VALUE_CHANGE_EVENT = () -> null;
 
     protected TableSource<I> tableSource;
+    protected TableSourceEventsDelegate<I> dataEventsDelegate;
     protected boolean ignoreListeners;
 
     protected Collection<Object> properties = new ArrayList<>();
@@ -48,13 +49,16 @@ public class TableDataContainer<I> implements Container, ItemSetChangeNotifier {
     protected Subscription itemSetChangeSubscription;
     protected Subscription valueChangeSubscription;
     protected Subscription stateChangeSubscription;
+    protected Subscription selectedItemChangeSubscription;
 
-    public TableDataContainer(TableSource<I> tableSource) {
+    public TableDataContainer(TableSource<I> tableSource, TableSourceEventsDelegate<I> dataEventsDelegate) {
         this.tableSource = tableSource;
+        this.dataEventsDelegate = dataEventsDelegate;
 
         this.itemSetChangeSubscription = this.tableSource.addItemSetChangeListener(this::datasourceItemSetChanged);
         this.valueChangeSubscription = this.tableSource.addValueChangeListener(this::datasourceValueChanged);
         this.stateChangeSubscription = this.tableSource.addStateChangeListener(this::datasourceStateChanged);
+        this.selectedItemChangeSubscription = this.tableSource.addSelectedItemChangeListener(this::datasourceSelectedItemChanged);
     }
 
     public void setProperties(Collection<Object> properties) {
@@ -74,6 +78,10 @@ public class TableDataContainer<I> implements Container, ItemSetChangeNotifier {
         if (stateChangeSubscription != null) {
             this.stateChangeSubscription.remove();
             this.stateChangeSubscription = null;
+        }
+        if (selectedItemChangeSubscription != null) {
+            this.selectedItemChangeSubscription.remove();
+            this.selectedItemChangeSubscription = null;
         }
         wrappersPool.clear();
         itemsCache.clear();
@@ -250,7 +258,7 @@ public class TableDataContainer<I> implements Container, ItemSetChangeNotifier {
             ignoreListeners = prevIgnoreListeners;
         }
 
-        // todo call Table delegate
+        dataEventsDelegate.tableSourceItemSetChanged(e);
     }
 
     protected void datasourceValueChanged(TableSource.ValueChangeEvent<I> e) {
@@ -260,7 +268,7 @@ public class TableDataContainer<I> implements Container, ItemSetChangeNotifier {
             listener.valueChange(VOID_VALUE_CHANGE_EVENT);
         }
 
-        // todo call Table delegate
+        dataEventsDelegate.tableSourcePropertyValueChanged(e);
     }
 
     protected void datasourceStateChanged(TableSource.StateChangeEvent<I> e) {
@@ -271,7 +279,11 @@ public class TableDataContainer<I> implements Container, ItemSetChangeNotifier {
             itemsCache.clear();
         }
 
-        // todo call Table delegate
+        dataEventsDelegate.tableSourceStateChanged(e);
+    }
+
+    protected void datasourceSelectedItemChanged(TableSource.SelectedItemChangeEvent<I> e) {
+        dataEventsDelegate.tableSourceSelectedItemChanged(e);
     }
 
     public TableSource<I> getTableSource() {
