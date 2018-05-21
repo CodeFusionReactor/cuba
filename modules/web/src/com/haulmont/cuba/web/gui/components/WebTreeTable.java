@@ -32,11 +32,10 @@ import com.haulmont.cuba.web.gui.data.CollectionDsWrapper;
 import com.haulmont.cuba.web.gui.data.HierarchicalDsWrapper;
 import com.haulmont.cuba.web.gui.data.ItemWrapper;
 import com.haulmont.cuba.web.gui.data.PropertyWrapper;
+import com.haulmont.cuba.web.widgets.CubaTreeTable;
 import com.haulmont.cuba.web.widgets.data.AggregationContainer;
 import com.haulmont.cuba.web.widgets.data.TreeTableContainer;
-import com.haulmont.cuba.web.widgets.CubaTreeTable;
 import com.vaadin.v7.data.Item;
-import com.vaadin.server.Resource;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,12 +45,11 @@ public class WebTreeTable<E extends Entity> extends WebAbstractTable<CubaTreeTab
     protected String hierarchyProperty;
 
     public WebTreeTable() {
-        component = createTreeTableComponent();
-        initComponent(component);
+        component = createComponent();
     }
 
-    protected CubaTreeTable createTreeTableComponent() {
-        return new CubaTreeTableExt();
+    protected CubaTreeTable createComponent() {
+        return new CubaTreeTable();
     }
 
     @Override
@@ -241,7 +239,7 @@ public class WebTreeTable<E extends Entity> extends WebAbstractTable<CubaTreeTab
             if (columns.isEmpty()) {
                 super.createProperties(view, metaClass);
             } else {
-                for (Map.Entry<Object, Column> entry : columns.entrySet()) {
+                for (Map.Entry<Object, Column<E>> entry : columns.entrySet()) {
                     if (entry.getKey() instanceof MetaPropertyPath) {
                         properties.add((MetaPropertyPath) entry.getKey());
                     }
@@ -400,20 +398,6 @@ public class WebTreeTable<E extends Entity> extends WebAbstractTable<CubaTreeTab
             if (datasource instanceof CollectionDatasource.Sortable) {
                 ((CollectionDatasource.Sortable) datasource).resetSortOrder();
             }
-        }
-    }
-
-    protected class CubaTreeTableExt extends CubaTreeTable {
-        @Override
-        public Resource getItemIcon(Object itemId) {
-            return WebTreeTable.this.getItemIcon(itemId);
-        }
-
-        @Override
-        protected boolean changeVariables(Map<String, Object> variables) {
-            boolean b = super.changeVariables(variables);
-            b = handleSpecificVariables(variables) || b;
-            return b;
         }
     }
 }

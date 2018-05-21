@@ -832,7 +832,6 @@ public class WebDataGrid<E extends Entity> extends WebAbstractComponent<CubaGrid
                 action = new ShowInfoAction();
                 addAction(action);
             }
-            action.setDatasource(datasource);
         }
     }
 

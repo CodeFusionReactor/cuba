@@ -35,7 +35,10 @@ import com.haulmont.cuba.core.global.*;
 import com.haulmont.cuba.gui.ComponentsHelper;
 import com.haulmont.cuba.gui.components.*;
 import com.haulmont.cuba.gui.components.Formatter;
-import com.haulmont.cuba.gui.components.data.TableDataSource;
+import com.haulmont.cuba.gui.components.data.EntityTableSource;
+import com.haulmont.cuba.gui.components.data.TableSource;
+import com.haulmont.cuba.gui.components.data.table.CollectionDatasourceTableAdapter;
+import com.haulmont.cuba.gui.components.data.table.SortableCollectionDatasourceTableAdapter;
 import com.haulmont.cuba.gui.components.formatters.CollectionFormatter;
 import com.haulmont.cuba.gui.components.sys.ShowInfoAction;
 import com.haulmont.cuba.gui.data.CollectionDatasource;
@@ -66,10 +69,8 @@ import com.vaadin.event.ShortcutAction.KeyCode;
 import com.vaadin.server.Resource;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.HorizontalLayout;
-import com.vaadin.ui.Label;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.v7.data.Property;
-import com.vaadin.v7.ui.AbstractSelect;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
@@ -77,18 +78,20 @@ import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.haulmont.bali.util.Preconditions.checkNotNullArgument;
 
 @SuppressWarnings("deprecation")
 public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEnhancedTable, E extends Entity>
         extends WebAbstractList<T, E>
-        implements Table<E>, LookupComponent.LookupSelectionChangeNotifier {
+        implements Table<E>, LookupComponent.LookupSelectionChangeNotifier, InitializingBean {
 
     public static final int MAX_TEXT_LENGTH_GAP = 10;
 
@@ -96,8 +99,10 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
             (source, itemId, columnId) -> null;
 
     protected static final String HAS_TOP_PANEL_STYLENAME = "has-top-panel";
-
     protected static final String CUSTOM_STYLE_NAME_PREFIX = "cs ";
+
+    // CAUTION: vaadin considers null as row header property id;
+    protected static final Object ROW_HEADER_PROPERTY_ID = null;
 
     // Beans
 
@@ -117,7 +122,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
     // Style names used by table itself
     protected List<String> internalStyles = new ArrayList<>();
 
-    protected Map<Object, Column> columns = new HashMap<>();
+    protected Map<Object, Table.Column<E>> columns = new HashMap<>();
     protected List<Table.Column<E>> columnsOrder = new ArrayList<>();
 
     protected boolean editable;
@@ -162,6 +167,11 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
     protected boolean ignoreUnfetchedAttributes;
 
     protected WebAbstractTable() {
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        initComponent(component);
     }
 
     @Inject
@@ -227,10 +237,11 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         return Collections.unmodifiableList(columnsOrder);
     }
 
-    public Map<Object, Column> getColumnsInternal() {
+    public Map<Object, Column<E>> getColumnsInternal() {
         return columns;
     }
 
+    @Nullable
     public Map<Column, String> getRequiredColumnsInternal() {
         return requiredColumns;
     }
@@ -238,14 +249,14 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
     @Override
     public Table.Column<E> getColumn(String id) {
         for (Table.Column<E> column : columnsOrder) {
-            if (column.getId().toString().equals(id))
+            if (column.getStringId().equals(id))
                 return column;
         }
         return null;
     }
 
     @Override
-    public void addColumn(Table.Column column) {
+    public void addColumn(Table.Column<E> column) {
         checkNotNullArgument(column, "Column must be non null");
 
         Object columnId = column.getId();
@@ -296,7 +307,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         }
         if (column.getAlignment() != null) {
             component.setColumnAlignment(columnId,
-                    WebComponentsHelper.convertColumnAlignment(column.getAlignment()));
+                    WebWrapperUtils.convertColumnAlignment(column.getAlignment()));
         }
 
         setColumnHeader(columnId, getColumnCaption(columnId, column));
@@ -317,7 +328,8 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
             MetaProperty metaProperty = propertyPath.getMetaProperty();
             MetaClass propertyMetaClass = metadataTools.getPropertyEnclosingMetaClass(propertyPath);
             String storeName = metadataTools.getStoreName(propertyMetaClass);
-            if (metadataTools.isLob(metaProperty) && !persistenceManagerClient.supportsLobSortingAndFiltering(storeName)) {
+            if (metadataTools.isLob(metaProperty)
+                    && !persistenceManagerClient.supportsLobSortingAndFiltering(storeName)) {
                 component.setColumnSortable(columnId, false);
             }
         }
@@ -402,7 +414,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
     @Override
     @Nullable
     public Printable getPrintable(Table.Column column) {
-        return getPrintable(String.valueOf(column.getId()));
+        return getPrintable(column.getStringId());
     }
 
     @Nullable
@@ -441,6 +453,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
                 @SuppressWarnings("unchecked")
                 Collection<MetaPropertyPath> propertyIds = (Collection<MetaPropertyPath>) ds.getContainerPropertyIds();
 
+                // todo extract methods, it is too big
                 if (editable) {
                     MetaClass metaClass = datasource.getMetaClass();
 
@@ -712,6 +725,11 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         component.setValidationVisible(false);
         component.setShowBufferedSourceException(false);
 
+        // todo
+        // ((CubaEnhancedTable) component).setCustomCellValueFormatter(this::formatCellValue);
+
+        component.setSpecificVariablesHandler(this::handleSpecificVariables);
+        component.setIconProvider(this::getItemIcon);
         component.setBeforePaintListener(() -> {
             com.vaadin.v7.ui.Table.CellStyleGenerator generator = component.getCellStyleGenerator();
             if (generator instanceof WebAbstractTable.StyleGeneratorAdapter) {
@@ -732,14 +750,14 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
             defaultRowHeaderWidth = theme.getInt("cuba.web.Table.defaultRowHeaderWidth");
         }
 
-        // CAUTION: vaadin considers null as row header property id;
-        component.setColumnWidth(null, defaultRowHeaderWidth); // todo get width from theme
+        component.setColumnWidth(ROW_HEADER_PROPERTY_ID, defaultRowHeaderWidth);
 
         contextMenuPopup.setParent(component);
         component.setContextMenuPopup(contextMenuPopup);
 
         shortcutsDelegate.setAllowEnterShortcut(false);
 
+        // todo rework
         component.addValueChangeListener(event -> {
             if (datasource == null) {
                 return;
@@ -771,6 +789,8 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
             LookupSelectionChangeEvent selectionChangeEvent = new LookupSelectionChangeEvent(this);
             getEventRouter().fireEvent(LookupSelectionChangeListener.class,
                     LookupSelectionChangeListener::lookupValueChanged, selectionChangeEvent);
+
+            // todo add SelectionChangeEvent support
         });
 
         component.addShortcutListener(
@@ -809,6 +829,12 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         // force default sizes
         componentComposition.setHeightUndefined();
         componentComposition.setWidthUndefined();
+    }
+
+    // vaadin8
+    protected String formatCellValue(Object rowId, Object colId, Property<?> property) {
+        // todo
+        return null;
     }
 
     protected WebTableFieldFactory createFieldFactory() {
@@ -957,7 +983,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         for (MetaPropertyPath propertyPath : properties) {
             Table.Column column = columns.get(propertyPath);
 
-            if (column != null && !(editable && BooleanUtils.isTrue(column.isEditable()))) {
+            if (column != null && !(editable && column.isEditable())) {
                 final String isLink =
                         column.getXmlDescriptor() == null ?
                                 null : column.getXmlDescriptor().attributeValue("link");
@@ -970,7 +996,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
                     if (!isLookup && !StringUtils.isEmpty(isLink)) {
                         setClickListener(propertyPath.toString(), new LinkCellClickListener(this, applicationContext));
                     } else if (editable && BooleanUtils.isTrue(column.isCalculatable())) {
-                        addGeneratedColumnInternal(propertyPath, new CalculatableColumnGenerator());
+                        addGeneratedColumnInternal(propertyPath, new CalculatableColumnGenerator(this));
                     } else {
                         if (column.getMaxTextLength() != null) {
                             addGeneratedColumnInternal(propertyPath, new AbbreviatedColumnGenerator(column, dynamicAttributesTools));
@@ -987,101 +1013,83 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
     }
 
     @Override
-    public void setTableDataSource(TableDataSource<E> tableDataSource) {
+    public void setTableDataSource(TableSource<E> tableSource) {
         if (this.dataBinding != null) {
             this.dataBinding.unbind();
             this.dataBinding = null;
 
+            // todo fieldDatasources
+
             this.component.setContainerDataSource(null);
         }
 
-        if (tableDataSource != null) {
+        if (tableSource != null) {
+            // Table supports only EntityTableSource
+            EntityTableSource<E> entityTableSource = (EntityTableSource<E>) tableSource;
+
             if (this.columns.isEmpty()) {
-                // todo generated columns automatically
+                setupAutowiredColumns(entityTableSource);
             }
 
             // bind new datasource
-            this.dataBinding = createTableDataContainer(tableDataSource); // todo pass delegate there
-
+            this.dataBinding = createTableDataContainer(tableSource); // todo pass delegate there
+            this.dataBinding.setProperties(getPropertyColumns(entityTableSource, columnsOrder));
             this.component.setContainerDataSource(this.dataBinding);
+
+            setupColumnSettings(entityTableSource);
+
+            createColumns(component.getContainerDataSource());
+
+            for (Table.Column column : this.columnsOrder) {
+                if (editable && column.getAggregation() != null
+                        && (BooleanUtils.isTrue(column.isEditable()) || BooleanUtils.isTrue(column.isCalculatable()))) {
+                    addAggregationCell(column);
+                }
+            }
+
+            createStubsForGeneratedColumns();
+
+            setVisibleColumns(getInitialVisibleColumnIds(entityTableSource));
+
+            if (security.isSpecificPermitted(ShowInfoAction.ACTION_PERMISSION)) {
+                if (getAction(ShowInfoAction.ACTION_ID) == null) {
+                    addAction(new ShowInfoAction());
+                }
+            }
+
+            if (rowsCount != null) {
+                rowsCount.setRowsCountTarget(this);
+            }
+
+            if (!canBeSorted(datasource)) {
+                setSortable(false);
+            }
+
+            for (Action action : getActions()) {
+                action.refreshState();
+            }
         }
     }
 
-    protected TableDataContainer<E> createTableDataContainer(TableDataSource<E> tableDataSource) {
-        if (tableDataSource instanceof TableDataSource.Sortable) {
-            return new SortableDataContainer<>((TableDataSource.Sortable<E>) tableDataSource);
-        }
-        return new TableDataContainer<>(tableDataSource);
+    protected List<Object> getPropertyColumns(EntityTableSource<E> entityTableSource, List<Column<E>> columnsOrder) {
+        return columnsOrder.stream()
+                .filter(c -> {
+                    MetaPropertyPath propertyPath = c.getBoundProperty();
+                    return propertyPath != null
+                            && security.isEntityAttrReadPermitted(entityTableSource.getMetaClass(), propertyPath.toPathString());
+                })
+                .map(Column::getBoundProperty)
+                .collect(Collectors.toList());
     }
 
-    @Override
-    public void setDatasource(CollectionDatasource datasource) {
-        Preconditions.checkNotNullArgument(datasource, "datasource is null");
+    protected void setupColumnSettings(EntityTableSource<E> entityTableSource) {
+        MetaClass metaClass = entityTableSource.getMetaClass();
 
-        if (this.datasource != null) {
-            if (!this.datasource.getMetaClass().equals(datasource.getMetaClass())) {
-                throw new IllegalArgumentException("The new datasource must correspond to the same MetaClass");
-            }
+        List<MetaPropertyPath> editableColumns = Collections.emptyList();
 
-            if (fieldDatasources != null) {
-                fieldDatasources.clear();
-            }
-
-            if (collectionDsListenersWrapper != null) {
-                collectionDsListenersWrapper.unbind(this.datasource);
-                if (containerDatasource != null) {
-                    containerDatasource.unsubscribe();
-                    containerDatasource = null;
-                }
-            }
-        }
-
-        if (this.columns.isEmpty()) {
-            // todo extract to method
-            Collection<MetaPropertyPath> paths = datasource.getView() != null ?
-                    // if a view is specified - use view properties
-                    metadataTools.getViewPropertyPaths(datasource.getView(), datasource.getMetaClass()) :
-                    // otherwise use all properties from meta-class
-                    metadataTools.getPropertyPaths(datasource.getMetaClass());
-            for (MetaPropertyPath metaPropertyPath : paths) {
-                MetaProperty property = metaPropertyPath.getMetaProperty();
-                if (!property.getRange().getCardinality().isMany() && !metadataTools.isSystem(property)) {
-                    Table.Column column = new Table.Column(metaPropertyPath);
-
-                    String propertyName = property.getName();
-                    MetaClass propertyMetaClass = metadataTools.getPropertyEnclosingMetaClass(metaPropertyPath);
-
-                    column.setCaption(messageTools.getPropertyCaption(propertyMetaClass, propertyName));
-                    column.setType(metaPropertyPath.getRangeJavaClass());
-
-                    Element element = DocumentHelper.createElement("column");
-                    column.setXmlDescriptor(element);
-
-                    addColumn(column);
-                }
-            }
-        }
-        Collection<Object> columns = this.columns.keySet();
-
-        this.datasource = datasource;
-
-        if (collectionDsListenersWrapper == null) {
-            collectionDsListenersWrapper = createCollectionDsListenersWrapper();
-        }
-
-        containerDatasource = createContainerDatasource(datasource, getPropertyColumns(),
-                collectionDsListenersWrapper);
-
-        component.setContainerDataSource(containerDatasource);
-
-        List<MetaPropertyPath> editableColumns = null;
-        if (isEditable()) {
-            editableColumns = new ArrayList<>();
-        }
-
-        MetaClass metaClass = datasource.getMetaClass();
-        for (Object columnId : columns) {
-            Table.Column column = this.columns.get(columnId);
+        for (Map.Entry<Object, Table.Column<E>> entry : this.columns.entrySet()) {
+            Object columnId = entry.getKey();
+            Column<E> column = entry.getValue();
 
             String caption;
             if (column != null) {
@@ -1093,9 +1101,12 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
             setColumnHeader(columnId, caption);
 
             if (column != null) {
-                if (editableColumns != null && column.isEditable() && (columnId instanceof MetaPropertyPath)) {
+                if (column.isEditable() && (columnId instanceof MetaPropertyPath)) {
                     MetaPropertyPath propertyPath = ((MetaPropertyPath) columnId);
                     if (security.isEntityAttrUpdatePermitted(metaClass, propertyPath.toString())) {
+                        if (editableColumns.isEmpty()) {
+                            editableColumns = new ArrayList<>();
+                        }
                         editableColumns.add(propertyPath);
                     }
                 }
@@ -1111,54 +1122,53 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
                     checkAggregation(column.getAggregation());
 
                     component.addContainerPropertyAggregation(column.getId(),
-                            WebComponentsHelper.convertAggregationType(column.getAggregation().getType()));
+                            WebWrapperUtils.convertAggregationType(column.getAggregation().getType()));
                 }
             }
         }
 
-        if (editableColumns != null && !editableColumns.isEmpty()) {
+        if (isEditable() && !editableColumns.isEmpty()) {
             setEditableColumns(editableColumns);
-        }
-
-        createColumns(containerDatasource);
-
-        for (Table.Column column : this.columnsOrder) {
-            if (editable && column.getAggregation() != null
-                    && (BooleanUtils.isTrue(column.isEditable()) || BooleanUtils.isTrue(column.isCalculatable()))) {
-                addAggregationCell(column);
-            }
-        }
-
-        createStubsForGeneratedColumns();
-
-        setVisibleColumns(getInitialVisibleColumnIds());
-
-        if (security.isSpecificPermitted(ShowInfoAction.ACTION_PERMISSION)) {
-            ShowInfoAction action = (ShowInfoAction) getAction(ShowInfoAction.ACTION_ID);
-            if (action == null) {
-                action = new ShowInfoAction();
-                addAction(action);
-            }
-            action.setDatasource(datasource);
-        }
-
-        if (rowsCount != null) {
-            rowsCount.setDatasource(datasource);
-        }
-
-        collectionDsListenersWrapper.bind(datasource);
-
-        for (Action action : getActions()) {
-            action.refreshState();
-        }
-
-        if (!canBeSorted(datasource)) {
-            setSortable(false);
         }
     }
 
-    protected CollectionDsListenersWrapper createCollectionDsListenersWrapper() {
-        return new TableCollectionDsListenersWrapper();
+    protected void setupAutowiredColumns(EntityTableSource<E> entityTableSource) {
+        Collection<MetaPropertyPath> paths = entityTableSource.getAutowiredPaths();
+
+        for (MetaPropertyPath metaPropertyPath : paths) {
+            MetaProperty property = metaPropertyPath.getMetaProperty();
+            if (!property.getRange().getCardinality().isMany()
+                    && !metadataTools.isSystem(property)) {
+                Table.Column<E> column = new Table.Column<>(metaPropertyPath);
+
+                String propertyName = property.getName();
+                MetaClass propertyMetaClass = metadataTools.getPropertyEnclosingMetaClass(metaPropertyPath);
+
+                column.setCaption(messageTools.getPropertyCaption(propertyMetaClass, propertyName));
+                column.setType(metaPropertyPath.getRangeJavaClass());
+
+                addColumn(column);
+            }
+        }
+    }
+
+    protected TableDataContainer<E> createTableDataContainer(TableSource<E> tableSource) {
+        if (tableSource instanceof TableSource.Sortable) {
+            return new SortableDataContainer<>((TableSource.Sortable<E>) tableSource);
+        }
+        return new TableDataContainer<>(tableSource);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public void setDatasource(CollectionDatasource datasource) {
+        TableSource<E> tableSource;
+        if (datasource instanceof CollectionDatasource.Sortable) {
+            tableSource = new SortableCollectionDatasourceTableAdapter((CollectionDatasource.Sortable) datasource);
+        } else {
+            tableSource = new CollectionDatasourceTableAdapter(datasource);
+        }
+        setTableDataSource(tableSource);
     }
 
     protected boolean canBeSorted(CollectionDatasource datasource) {
@@ -1244,10 +1254,10 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         }
     }
 
-    protected List<Object> getInitialVisibleColumnIds() {
+    protected List<Object> getInitialVisibleColumnIds(EntityTableSource<E> entityTableSource) {
         List<Object> result = new ArrayList<>();
 
-        MetaClass metaClass = datasource.getMetaClass();
+        MetaClass metaClass = entityTableSource.getMetaClass();
         for (Column column : columnsOrder) {
             if (column.getId() instanceof MetaPropertyPath) {
                 MetaPropertyPath propertyPath = (MetaPropertyPath) column.getId();
@@ -1261,24 +1271,13 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         return result;
     }
 
-    protected List<MetaPropertyPath> getPropertyColumns() {
-        List<MetaPropertyPath> result = new ArrayList<>();
-
-        MetaClass metaClass = datasource.getMetaClass();
-        for (Column column : columnsOrder) {
-            if (column.getId() instanceof MetaPropertyPath) {
-                MetaPropertyPath propertyPath = (MetaPropertyPath) column.getId();
-                if (security.isEntityAttrReadPermitted(metaClass, propertyPath.toString())) {
-                    result.add((MetaPropertyPath) column.getId());
-                }
-            }
-        }
-        return result;
-    }
-
-    protected abstract CollectionDsWrapper createContainerDatasource(CollectionDatasource datasource,
+    @Deprecated
+    protected CollectionDsWrapper createContainerDatasource(CollectionDatasource datasource,
                                                                      Collection<MetaPropertyPath> columns,
-                                                                     CollectionDsListenersWrapper collectionDsListenersWrapper);
+                                                                     CollectionDsListenersWrapper collectionDsListenersWrapper) {
+        // todo remove
+        return null;
+    }
 
     protected void setVisibleColumns(List<?> columnsOrder) {
         component.setVisibleColumns(columnsOrder.toArray());
@@ -1712,7 +1711,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
                         // wrap field for show required asterisk
                         if ((vComponent instanceof com.vaadin.v7.ui.Field)
                                 && (((com.vaadin.v7.ui.Field) vComponent).isRequired())) {
-                            VerticalLayout layout = new VerticalLayout();
+                            VerticalLayout layout = new VerticalLayout(); // vaadin8 replace with CssLayout
                             layout.setMargin(false);
                             layout.setSpacing(false);
                             layout.addComponent(vComponent);
@@ -1757,7 +1756,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
     public void addAggregationProperty(Column column, AggregationInfo.Type type) {
         checkAggregation(column.getAggregation());
 
-        component.addContainerPropertyAggregation(column.getId(), WebComponentsHelper.convertAggregationType(type));
+        component.addContainerPropertyAggregation(column.getId(), WebWrapperUtils.convertAggregationType(type));
 
         if (column.getAggregation() != null) {
             addAggregationCell(column);
@@ -1878,7 +1877,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         if (column.getAlignment() != alignment) {
             column.setAlignment(alignment);
         }
-        component.setColumnAlignment(column.getId(), WebComponentsHelper.convertColumnAlignment(alignment));
+        component.setColumnAlignment(column.getId(), WebWrapperUtils.convertColumnAlignment(alignment));
     }
 
     @Override
@@ -2054,9 +2053,9 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         if (component.getVisibleColumns() == null)
             return Collections.emptyList();
 
-        final List<Table.Column> visibleColumns = new ArrayList<>(component.getVisibleColumns().length);
+        List<Table.Column> visibleColumns = new ArrayList<>(component.getVisibleColumns().length);
         Object[] keys = component.getVisibleColumns();
-        for (final Object key : keys) {
+        for (Object key : keys) {
             if (!component.isColumnCollapsed(key)) {
                 Column column = columns.get(key);
                 if (column != null)
@@ -2173,7 +2172,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
     }
 
     @Override
-    public void setClickListener(String columnId, final CellClickListener clickListener) {
+    public void setClickListener(String columnId, CellClickListener clickListener) {
         component.setClickListener(getColumn(columnId).getId(), (itemId, columnId1) -> {
             ItemWrapper wrapper = (ItemWrapper) component.getItem(itemId);
             Entity entity = wrapper.getItem();
@@ -2277,7 +2276,9 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
     protected String generateDefaultCellStyle(Object itemId, Object propertyId, MetaPropertyPath propertyPath) {
         String style = null;
 
-        Column column = getColumn(propertyId.toString());
+        String stringPropertyId = propertyId.toString();
+
+        Column column = getColumn(stringPropertyId);
         if (column != null) {
             final String isLink = column.getXmlDescriptor() == null ?
                     null : column.getXmlDescriptor().attributeValue("link");
@@ -2291,10 +2292,10 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
                     style = "c-table-cell-link";
                 } else if (column.getMaxTextLength() != null) {
                     Entity item = getDatasource().getItemNN(itemId);
-                    Object value = item.getValueEx(propertyId.toString());
+                    Object value = item.getValueEx(stringPropertyId);
                     String stringValue;
                     if (value instanceof String) {
-                        stringValue = item.getValueEx(propertyId.toString());
+                        stringValue = item.getValueEx(stringPropertyId);
                     } else {
                         if (DynamicAttributesUtils.isDynamicAttribute(propertyPath.getMetaProperty())) {
                             stringValue = dynamicAttributesTools.getDynamicAttributeValueAsString(propertyPath.getMetaProperty(), value);
@@ -2316,10 +2317,11 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
             }
         }
 
-        if (propertyPath.getRangeJavaClass() == Boolean.class) {
-            Entity item = datasource.getItem(itemId);
+        if (propertyPath.getRangeJavaClass() == Boolean.class
+                && dataBinding != null) {
+            Entity item = dataBinding.getTableSource().getItem(itemId);
             if (item != null) {
-                Boolean value = item.getValueEx(propertyId.toString());
+                Boolean value = item.getValueEx(stringPropertyId);
                 if (BooleanUtils.isTrue(value)) {
                     style = "boolean-cell boolean-cell-true";
                 } else {
@@ -2375,22 +2377,6 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         columns.get(propertyId).setCollapsed(columnCollapsed);
     }
 
-    protected static class CalculatablePropertyValueChangeListener implements Property.ValueChangeListener {
-        private static final long serialVersionUID = 8041384664735759397L;
-        private Label component;
-        private com.haulmont.cuba.gui.components.Formatter formatter;
-
-        private CalculatablePropertyValueChangeListener(Label component, com.haulmont.cuba.gui.components.Formatter formatter) {
-            this.component = component;
-            this.formatter = formatter;
-        }
-
-        @Override
-        public void valueChange(Property.ValueChangeEvent event) {
-            WebComponentsHelper.setLabelText(component, event.getProperty().getValue(), formatter);
-        }
-    }
-
     protected class TablePropertyWrapper extends PropertyWrapper {
 
         protected ValueChangeListener calcListener;
@@ -2429,6 +2415,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
             }
         }
 
+        // todo remove
         @SuppressWarnings("unchecked")
         @Override
         public String getFormattedValue() {
@@ -2462,6 +2449,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
             return super.getValue();
         }
 
+        // todo make static method
         protected Object getValueExIgnoreUnfetched(Instance instance, String[] properties) {
             Object currentValue = null;
             Instance currentInstance = instance;
@@ -2485,35 +2473,6 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
                 currentInstance = currentValue instanceof Instance ? (Instance) currentValue : null;
             }
             return currentValue;
-        }
-    }
-
-    protected class CalculatableColumnGenerator implements SystemTableColumnGenerator {
-        @Override
-        public com.vaadin.ui.Component generateCell(com.vaadin.v7.ui.Table source, Object itemId, Object columnId) {
-            return generateCell((AbstractSelect) source, itemId, columnId);
-        }
-
-        protected com.vaadin.ui.Component generateCell(AbstractSelect source, Object itemId, Object columnId) {
-            CollectionDatasource ds = WebAbstractTable.this.getDatasource();
-            MetaPropertyPath propertyPath = ds.getMetaClass().getPropertyPath(columnId.toString());
-
-            PropertyWrapper propertyWrapper = (PropertyWrapper) source.getContainerProperty(itemId, propertyPath);
-
-            com.haulmont.cuba.gui.components.Formatter formatter = null;
-            Table.Column column = WebAbstractTable.this.getColumn(columnId.toString());
-            if (column != null) {
-                formatter = column.getFormatter();
-            }
-
-            final com.vaadin.ui.Label label = new com.vaadin.ui.Label();
-            WebComponentsHelper.setLabelText(label, propertyWrapper.getValue(), formatter);
-            label.setWidthUndefined();
-
-            //add property change listener that will update a label value
-            propertyWrapper.addListener(new CalculatablePropertyValueChangeListener(label, formatter));
-
-            return label;
         }
     }
 
@@ -2617,7 +2576,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
 
         protected void handleAggregation() {
             if (isAggregatable() && aggregationCells != null) {
-                final CollectionDatasource ds = WebAbstractTable.this.getDatasource();
+                CollectionDatasource ds = WebAbstractTable.this.getDatasource();
                 component.aggregate(new AggregationContainer.Context(ds.getItemIds()));
 
                 // trigger aggregation repaint

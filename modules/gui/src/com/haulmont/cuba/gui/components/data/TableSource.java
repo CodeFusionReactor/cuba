@@ -22,8 +22,15 @@ import java.util.Collection;
 import java.util.EventObject;
 import java.util.function.Consumer;
 
-public interface TableDataSource<I> {
+/**
+ * todo JavaDoc
+ *
+ * @param <I>
+ */
+public interface TableSource<I> {
     Collection<?> getItemIds();
+
+    I getItem();
 
     I getItem(Object itemId);
 
@@ -40,11 +47,11 @@ public interface TableDataSource<I> {
 
     boolean supportsProperty(Object propertyId);
 
-    Subscription addStateChangeListener(Consumer<TableDataSource.StateChangeEvent<I>> listener);
-    Subscription addValueChangeListener(Consumer<TableDataSource.ValueChangeEvent<I>> listener);
-    Subscription addItemSetChangeListener(Consumer<TableDataSource.ItemSetChangeEvent<I>> listener);
+    Subscription addStateChangeListener(Consumer<TableSource.StateChangeEvent<I>> listener);
+    Subscription addValueChangeListener(Consumer<TableSource.ValueChangeEvent<I>> listener);
+    Subscription addItemSetChangeListener(Consumer<TableSource.ItemSetChangeEvent<I>> listener);
 
-    interface Ordered<T> extends TableDataSource<T> {
+    interface Ordered<T> extends TableSource<T> {
         Object nextItemId(Object itemId);
 
         Object prevItemId(Object itemId);
@@ -66,15 +73,15 @@ public interface TableDataSource<I> {
     class StateChangeEvent<T> extends EventObject {
         protected BindingState state;
 
-        public StateChangeEvent(TableDataSource<T> source, BindingState state) {
+        public StateChangeEvent(TableSource<T> source, BindingState state) {
             super(source);
             this.state = state;
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public TableDataSource<T> getSource() {
-            return (TableDataSource<T>) super.getSource();
+        public TableSource<T> getSource() {
+            return (TableSource<T>) super.getSource();
         }
 
         public BindingState getState() {
@@ -87,7 +94,7 @@ public interface TableDataSource<I> {
         private final T prevValue;
         private final T value;
 
-        public ValueChangeEvent(TableDataSource<T> source, T prevValue, T value) {
+        public ValueChangeEvent(TableSource<T> source, T prevValue, T value) {
             super(source);
             this.prevValue = prevValue;
             this.value = value;
@@ -95,8 +102,8 @@ public interface TableDataSource<I> {
 
         @SuppressWarnings("unchecked")
         @Override
-        public TableDataSource<T> getSource() {
-            return (TableDataSource<T>) super.getSource();
+        public TableSource<T> getSource() {
+            return (TableSource<T>) super.getSource();
         }
 
         public T getPrevValue() {
@@ -110,14 +117,14 @@ public interface TableDataSource<I> {
 
     // todo
     class ItemSetChangeEvent<T> extends EventObject {
-        public ItemSetChangeEvent(TableDataSource<T> source) {
+        public ItemSetChangeEvent(TableSource<T> source) {
             super(source);
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public TableDataSource<T> getSource() {
-            return (TableDataSource<T>) super.getSource();
+        public TableSource<T> getSource() {
+            return (TableSource<T>) super.getSource();
         }
     }
 }

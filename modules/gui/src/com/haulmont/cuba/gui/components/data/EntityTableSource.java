@@ -16,11 +16,14 @@
 
 package com.haulmont.cuba.gui.components.data;
 
-import com.haulmont.cuba.gui.components.Component;
+import com.haulmont.chile.core.model.MetaClass;
+import com.haulmont.chile.core.model.MetaPropertyPath;
+import com.haulmont.cuba.core.entity.Entity;
 
-public interface TableDataBinding<I> {
-    TableDataSource<I> getSource();
-    Component getComponent();
+import java.util.Collection;
 
-    void activate();
+public interface EntityTableSource<E extends Entity> extends TableSource<E> {
+    MetaClass getMetaClass();
+
+    Collection<MetaPropertyPath> getAutowiredPaths();
 }
