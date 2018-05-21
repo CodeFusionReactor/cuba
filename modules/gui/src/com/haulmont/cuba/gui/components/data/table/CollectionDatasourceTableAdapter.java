@@ -25,12 +25,12 @@ import com.haulmont.cuba.core.global.AppBeans;
 import com.haulmont.cuba.core.global.MetadataTools;
 import com.haulmont.cuba.gui.components.data.BindingState;
 import com.haulmont.cuba.gui.components.data.EntityTableSource;
-import com.haulmont.cuba.gui.components.data.TableSource;
 import com.haulmont.cuba.gui.data.CollectionDatasource;
 import com.haulmont.cuba.gui.data.Datasource;
 import com.haulmont.cuba.gui.data.impl.CollectionDsHelper;
 import org.apache.commons.lang3.NotImplementedException;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.function.Consumer;
 
@@ -50,6 +50,10 @@ public class CollectionDatasourceTableAdapter<E extends Entity<K>, K> implements
         this.datasource.addCollectionChangeListener(this::datasourceCollectionChanged);
 
         CollectionDsHelper.autoRefreshInvalid(datasource, true);
+
+        if (datasource.getState() == Datasource.State.VALID) {
+            setState(BindingState.ACTIVE);
+        }
     }
 
     protected void datasourceCollectionChanged(@SuppressWarnings("unused") CollectionDatasource.CollectionChangeEvent<E, K> e) {
@@ -87,8 +91,13 @@ public class CollectionDatasourceTableAdapter<E extends Entity<K>, K> implements
     }
 
     @Override
-    public E getItem() {
+    public E getSelectedItem() {
         return (E) datasource.getItem();
+    }
+
+    @Override
+    public void setSelectedItem(@Nullable E item) {
+        datasource.setItem(item);
     }
 
     @Override

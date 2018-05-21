@@ -149,12 +149,13 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
 
         groupPropertiesElement = element.addElement("groupProperties");
 
+        /* vaadin8 disabled temporarily
         for (Object groupProperty : component.getGroupProperties()) {
             if (getNotCollapsedColumns().contains(getColumn(groupProperty.toString()))) {
                 Element groupPropertyElement = groupPropertiesElement.addElement("property");
                 groupPropertyElement.addAttribute("id", groupProperty.toString());
             }
-        }
+        }*/
 
         return true;
     }
@@ -170,8 +171,8 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
             for (Object o : elements) {
                 String id = ((Element) o).attributeValue("id");
                 MetaPropertyPath property = DynamicAttributesUtils.isDynamicAttribute(id)
-                        ? DynamicAttributesUtils.getMetaPropertyPath(datasource.getMetaClass(), id)
-                        : datasource.getMetaClass().getPropertyPath(id);
+                        ? DynamicAttributesUtils.getMetaPropertyPath(getDatasource().getMetaClass(), id)
+                        : getDatasource().getMetaClass().getPropertyPath(id);
 
                 if (property != null) {
                     properties.add(property);
@@ -970,8 +971,8 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
             super.handleAggregation();
 
             if (isAggregatable() && aggregationCells != null) {
-                if (datasource instanceof GroupDatasource) {
-                    GroupDatasource groupDs = ((GroupDatasource) datasource);
+                if (getDatasource() != null) {
+                    GroupDatasource groupDs = getDatasource();
                     @SuppressWarnings("unchecked")
                     Collection<GroupInfo> roots = groupDs.rootGroups();
                     for (GroupInfo root : roots) {

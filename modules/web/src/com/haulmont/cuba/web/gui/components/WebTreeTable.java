@@ -172,7 +172,7 @@ public class WebTreeTable<E extends Entity> extends WebAbstractTable<CubaTreeTab
     }
 
     protected List<Object> getCollapsedItemIds() {
-        if (datasource == null) {
+        if (getDatasource() == null) {
             return Collections.emptyList();
         }
 

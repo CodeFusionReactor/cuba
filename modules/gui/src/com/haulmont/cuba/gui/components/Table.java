@@ -23,7 +23,9 @@ import com.haulmont.cuba.core.global.AppBeans;
 import com.haulmont.cuba.core.global.MessageTools;
 import com.haulmont.cuba.core.global.Metadata;
 import com.haulmont.cuba.gui.ComponentsHelper;
+import com.haulmont.cuba.gui.components.data.EntityTableSource;
 import com.haulmont.cuba.gui.components.data.TableSource;
+import com.haulmont.cuba.gui.components.data.table.CollectionDatasourceTableAdapter;
 import com.haulmont.cuba.gui.data.CollectionDatasource;
 import com.haulmont.cuba.gui.data.Datasource;
 import org.dom4j.Element;
@@ -62,11 +64,19 @@ public interface Table<E extends Entity>
 
     Map<Object, Object> getAggregationResults();
 
-    void setTableDataSource(TableSource<E> tableSource);
+    void setTableSource(TableSource<E> tableSource);
+    TableSource<E> getTableSource();
 
     // todo convert to default method
     @Deprecated
     void setDatasource(CollectionDatasource datasource);
+
+    @Deprecated
+    @Override
+    default CollectionDatasource getDatasource() {
+        TableSource<E> tableSource = getTableSource();
+        return tableSource != null ? ((CollectionDatasourceTableAdapter) tableSource).getDatasource() : null;
+    }
 
     void setRequired(Column<E> column, boolean required, String message);
 

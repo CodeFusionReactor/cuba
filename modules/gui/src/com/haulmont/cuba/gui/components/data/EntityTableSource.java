@@ -20,10 +20,17 @@ import com.haulmont.chile.core.model.MetaClass;
 import com.haulmont.chile.core.model.MetaPropertyPath;
 import com.haulmont.cuba.core.entity.Entity;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 
+// todo JavaDoc
 public interface EntityTableSource<E extends Entity> extends TableSource<E> {
     MetaClass getMetaClass();
 
+    // todo rename
     Collection<MetaPropertyPath> getAutowiredPaths();
+
+    @Nullable
+    E getSelectedItem();
+    void setSelectedItem(@Nullable E item);
 }

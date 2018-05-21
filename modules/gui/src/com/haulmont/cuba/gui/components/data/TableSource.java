@@ -18,6 +18,7 @@ package com.haulmont.cuba.gui.components.data;
 
 import com.haulmont.bali.events.Subscription;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.EventObject;
 import java.util.function.Consumer;
@@ -30,9 +31,16 @@ import java.util.function.Consumer;
 public interface TableSource<I> {
     Collection<?> getItemIds();
 
-    I getItem();
-
+    @Nullable
     I getItem(Object itemId);
+
+    default I getItemNN(Object itemId) {
+        I item = getItem(itemId);
+        if (item == null) {
+            throw new IllegalArgumentException("Unable to find item with id " + itemId);
+        }
+        return item;
+    }
 
     Object getItemValue(Object itemId, Object propertyId);
     void setItemValue(Object itemId, Object propertyId, Object newValue);
