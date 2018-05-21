@@ -36,19 +36,18 @@ import com.haulmont.cuba.gui.ComponentsHelper;
 import com.haulmont.cuba.gui.components.*;
 import com.haulmont.cuba.gui.components.Formatter;
 import com.haulmont.cuba.gui.components.LookupComponent.LookupSelectionChangeNotifier;
+import com.haulmont.cuba.gui.components.actions.BaseAction;
 import com.haulmont.cuba.gui.components.data.BindingState;
 import com.haulmont.cuba.gui.components.data.EntityTableSource;
 import com.haulmont.cuba.gui.components.data.TableSource;
 import com.haulmont.cuba.gui.components.data.table.CollectionDatasourceTableAdapter;
 import com.haulmont.cuba.gui.components.data.table.SortableCollectionDatasourceTableAdapter;
-import com.haulmont.cuba.gui.components.formatters.CollectionFormatter;
 import com.haulmont.cuba.gui.components.sys.ShowInfoAction;
 import com.haulmont.cuba.gui.data.CollectionDatasource;
 import com.haulmont.cuba.gui.data.Datasource;
 import com.haulmont.cuba.gui.data.DsBuilder;
 import com.haulmont.cuba.gui.data.aggregation.Aggregation;
 import com.haulmont.cuba.gui.data.aggregation.Aggregations;
-import com.haulmont.cuba.gui.data.impl.CollectionDsListenersWrapper;
 import com.haulmont.cuba.gui.data.impl.DatasourceImplementation;
 import com.haulmont.cuba.gui.presentations.Presentations;
 import com.haulmont.cuba.gui.presentations.PresentationsImpl;
@@ -60,7 +59,6 @@ import com.haulmont.cuba.web.WebConfig;
 import com.haulmont.cuba.web.gui.components.presentations.TablePresentations;
 import com.haulmont.cuba.web.gui.components.table.*;
 import com.haulmont.cuba.web.gui.components.util.ShortcutListenerDelegate;
-import com.haulmont.cuba.web.gui.data.CollectionDsWrapper;
 import com.haulmont.cuba.web.gui.data.ItemWrapper;
 import com.haulmont.cuba.web.gui.icons.IconResolver;
 import com.haulmont.cuba.web.widgets.CubaEnhancedTable;
@@ -89,6 +87,7 @@ import org.springframework.context.ApplicationContext;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.haulmont.bali.util.Preconditions.checkNotNullArgument;
@@ -164,10 +163,6 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
     protected boolean settingsEnabled = true;
 
     protected TableDataContainer<E> dataBinding;
-
-    // todo remove
-    protected CollectionDsListenersWrapper collectionDsListenersWrapper;
-    protected CollectionDsWrapper containerDatasource;
 
     protected boolean ignoreUnfetchedAttributes;
 
@@ -263,7 +258,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
 
         Set selected = getSelectedItemIds();
         return selected == null || selected.isEmpty() ?
-                null : (E) tableSource.getItem(selected.iterator().next());
+                null : tableSource.getItem(selected.iterator().next());
     }
 
     @SuppressWarnings("unchecked")
@@ -279,7 +274,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
 
         if (itemIds != null) {
             if (itemIds.size() == 1) {
-                E item = (E) tableSource.getItem(itemIds.iterator().next());
+                E item = tableSource.getItem(itemIds.iterator().next());
                 return Collections.singleton(item);
             }
 
@@ -390,6 +385,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
 
         Object columnId = column.getId();
         component.addContainerProperty(columnId, column.getType(), null);
+
         if (StringUtils.isNotBlank(column.getDescription())) {
             component.setColumnDescription(columnId, column.getDescription());
         }
@@ -398,31 +394,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
             component.setAggregationDescription(columnId, column.getValueDescription());
         } else if (column.getAggregation() != null
                 && column.getAggregation().getType() != AggregationInfo.Type.CUSTOM) {
-            String aggregationTypeLabel;
-
-            switch (column.getAggregation().getType()) {
-                case AVG:
-                    aggregationTypeLabel = "aggregation.avg";
-                    break;
-                case COUNT:
-                    aggregationTypeLabel = "aggregation.count";
-                    break;
-                case SUM:
-                    aggregationTypeLabel = "aggregation.sum";
-                    break;
-                case MIN:
-                    aggregationTypeLabel = "aggregation.min";
-                    break;
-                case MAX:
-                    aggregationTypeLabel = "aggregation.max";
-                    break;
-                default:
-                    throw new IllegalArgumentException(
-                            String.format("AggregationType %s is not supported",
-                                    column.getAggregation().getType().toString()));
-            }
-
-            component.setAggregationDescription(columnId, messages.getMainMessage(aggregationTypeLabel));
+            setColumnAggregationDescriptionByType(column, columnId);
         }
 
         if (!column.isSortable()) {
@@ -444,15 +416,6 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         column.setOwner(this);
 
         MetaPropertyPath propertyPath = column.getBoundProperty();
-
-        if (column.getFormatter() == null && propertyPath != null) {
-            MetaProperty metaProperty = propertyPath.getMetaProperty();
-
-            if (Collection.class.isAssignableFrom(metaProperty.getJavaType())) {
-                column.setFormatter(new CollectionFormatter(metadataTools));
-            }
-        }
-
         if (propertyPath != null) {
             MetaProperty metaProperty = propertyPath.getMetaProperty();
             MetaClass propertyMetaClass = metadataTools.getPropertyEnclosingMetaClass(propertyPath);
@@ -462,6 +425,34 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
                 component.setColumnSortable(columnId, false);
             }
         }
+    }
+
+    protected void setColumnAggregationDescriptionByType(Column<E> column, Object columnId) {
+        String aggregationTypeLabel;
+
+        switch (column.getAggregation().getType()) {
+            case AVG:
+                aggregationTypeLabel = "aggregation.avg";
+                break;
+            case COUNT:
+                aggregationTypeLabel = "aggregation.count";
+                break;
+            case SUM:
+                aggregationTypeLabel = "aggregation.sum";
+                break;
+            case MIN:
+                aggregationTypeLabel = "aggregation.min";
+                break;
+            case MAX:
+                aggregationTypeLabel = "aggregation.max";
+                break;
+            default:
+                throw new IllegalArgumentException(
+                        String.format("AggregationType %s is not supported",
+                                column.getAggregation().getType().toString()));
+        }
+
+        component.setAggregationDescription(columnId, messages.getMainMessage(aggregationTypeLabel));
     }
 
     @Override
@@ -870,13 +861,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         component.addValueChangeListener(this::tableSelectionChanged);
         component.setSpecificVariablesHandler(this::handleSpecificVariables);
         component.setIconProvider(this::getItemIcon);
-        component.setBeforePaintListener(() -> {
-            com.vaadin.v7.ui.Table.CellStyleGenerator generator = component.getCellStyleGenerator();
-            if (generator instanceof WebAbstractTable.StyleGeneratorAdapter) {
-                //noinspection unchecked
-                ((StyleGeneratorAdapter) generator).resetExceptionHandledFlag();
-            }
-        });
+        component.setBeforePaintListener(this::beforeComponentPaint);
 
         component.setSortAscendingLabel(messages.getMainMessage("tableSort.ascending"));
         component.setSortResetLabel(messages.getMainMessage("tableSort.reset"));
@@ -991,7 +976,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
                     // vaadin8 move to Column
                     String captionProperty = column.getXmlDescriptor().attributeValue("captionProperty");
                     if (StringUtils.isNotEmpty(captionProperty)) {
-                        E item = getTableSource().getItem(rowId);
+                        E item = getTableSource().getItemNN(rowId);
                         Object captionValue = item.getValueEx(captionProperty);
                         return captionValue != null ? String.valueOf(captionValue) : null;
                     }
@@ -1097,7 +1082,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         }
 
         if (action != null && action.isEnabled()) {
-            Window window = ComponentsHelper.getWindowImplementation(WebAbstractTable.this);
+            Window window = ComponentsHelper.getWindowImplementation(this);
             if (window instanceof Window.Wrapper) {
                 window = ((Window.Wrapper) window).getWrappedWindow();
             }
@@ -1119,21 +1104,17 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
 
     @Override
     public void setLookupSelectHandler(Runnable selectHandler) {
-        // todo replace with BaseAction
-        setEnterPressAction(new AbstractAction(WindowDelegate.LOOKUP_ENTER_PRESSED_ACTION_ID) {
-            @Override
-            public void actionPerform(com.haulmont.cuba.gui.components.Component component) {
-                selectHandler.run();
-            }
-        });
+        Consumer<Action.ActionPerformedEvent> actionHandler = event -> selectHandler.run();
 
-        // todo replace with BaseAction
-        setItemClickAction(new AbstractAction(WindowDelegate.LOOKUP_ITEM_CLICK_ACTION_ID) {
-            @Override
-            public void actionPerform(com.haulmont.cuba.gui.components.Component component) {
-                selectHandler.run();
-            }
-        });
+        setEnterPressAction(
+                new BaseAction(WindowDelegate.LOOKUP_ENTER_PRESSED_ACTION_ID)
+                        .withHandler(actionHandler)
+        );
+
+        setItemClickAction(
+                new BaseAction(WindowDelegate.LOOKUP_ITEM_CLICK_ACTION_ID)
+                        .withHandler(actionHandler)
+        );
     }
 
     @Override
@@ -1492,14 +1473,6 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
             }
         }
         return result;
-    }
-
-    @Deprecated
-    protected CollectionDsWrapper createContainerDatasource(CollectionDatasource datasource,
-                                                                     Collection<MetaPropertyPath> columns,
-                                                                     CollectionDsListenersWrapper collectionDsListenersWrapper) {
-        // todo remove
-        return null;
     }
 
     protected void setVisibleColumns(List<?> columnsOrder) {
@@ -2621,6 +2594,14 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         boolean columnCollapsed = component.isColumnCollapsed(propertyId);
 
         columns.get(propertyId).setCollapsed(columnCollapsed);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void beforeComponentPaint() {
+        com.vaadin.v7.ui.Table.CellStyleGenerator generator = component.getCellStyleGenerator();
+        if (generator instanceof WebAbstractTable.StyleGeneratorAdapter) {
+            ((StyleGeneratorAdapter) generator).resetExceptionHandledFlag();
+        }
     }
 
     protected class StyleGeneratorAdapter implements com.vaadin.v7.ui.Table.CellStyleGenerator {

@@ -22,8 +22,6 @@ import com.haulmont.chile.core.model.MetaClass;
 import com.haulmont.chile.core.model.MetaPropertyPath;
 import com.haulmont.cuba.core.app.dynamicattributes.DynamicAttributesUtils;
 import com.haulmont.cuba.core.entity.Entity;
-import com.haulmont.cuba.core.global.AppBeans;
-import com.haulmont.cuba.core.global.MetadataTools;
 import com.haulmont.cuba.core.global.View;
 import com.haulmont.cuba.gui.components.GroupTable;
 import com.haulmont.cuba.gui.components.Table;
@@ -32,10 +30,10 @@ import com.haulmont.cuba.gui.data.Datasource;
 import com.haulmont.cuba.gui.data.GroupDatasource;
 import com.haulmont.cuba.gui.data.GroupInfo;
 import com.haulmont.cuba.gui.data.impl.CollectionDsListenersWrapper;
-import com.haulmont.cuba.web.gui.data.CollectionDsWrapper;
 import com.haulmont.cuba.web.gui.data.ItemWrapper;
 import com.haulmont.cuba.web.gui.data.SortableCollectionDsWrapper;
 import com.haulmont.cuba.web.widgets.CubaGroupTable;
+import com.haulmont.cuba.web.widgets.CubaGroupTable.GroupAggregationContext;
 import com.haulmont.cuba.web.widgets.data.AggregationContainer;
 import com.haulmont.cuba.web.widgets.data.GroupTableContainer;
 import com.vaadin.v7.data.Item;
@@ -51,6 +49,7 @@ import java.util.stream.Collectors;
 
 import static com.haulmont.bali.util.Preconditions.checkNotNullArgument;
 
+@SuppressWarnings("deprecation")
 public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupTable, E> implements GroupTable<E> {
 
     protected Map<Table.Column, GroupAggregationCells> groupAggregationCells = null;
@@ -117,24 +116,6 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
     }
 
     @Override
-    protected StyleGeneratorAdapter createStyleGenerator() {
-        return new StyleGeneratorAdapter(){
-            @Override
-            public String getStyle(com.vaadin.v7.ui.Table source, Object itemId, Object propertyId) {
-                // todo move to getGeneratedCellStyle, get rid of inheritance
-                if (!component.getGroupProperties().contains(propertyId)) {
-                    return super.getStyle(source, itemId, propertyId);
-                }
-
-                if (styleProviders != null) {
-                    return getGeneratedCellStyle(itemId, propertyId);
-                }
-                return null;
-            }
-        };
-    }
-
-    @Override
     public boolean saveSettings(Element element) {
         if (!isSettingsEnabled()) {
             return false;
@@ -186,16 +167,9 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
     }
 
     @Override
-    protected CollectionDsWrapper createContainerDatasource(CollectionDatasource datasource,
-                                                            Collection<MetaPropertyPath> columns,
-                                                            CollectionDsListenersWrapper collectionDsListenersWrapper) {
-        return new GroupTableDsWrapper(datasource, columns, collectionDsListenersWrapper);
-    }
-
-    @Override
     protected Map<Object, Object> __handleAggregationResults(AggregationContainer.Context context, Map<Object, Object> results) {
-        if (context instanceof CubaGroupTable.GroupAggregationContext) {
-            CubaGroupTable.GroupAggregationContext groupContext = (CubaGroupTable.GroupAggregationContext) context;
+        if (context instanceof GroupAggregationContext) {
+            GroupAggregationContext groupContext = (GroupAggregationContext) context;
 
             for (Map.Entry<Object, Object> entry : results.entrySet()) {
                 Table.Column column = columns.get(entry.getKey());
@@ -221,7 +195,7 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
 
     protected Object[] getNewColumnOrder(Object[] newGroupProperties) {
         //noinspection unchecked
-        List<Object> allProps = new ArrayList<>(containerDatasource.getContainerPropertyIds());
+        List<Object> allProps = new ArrayList<>(component.getContainerDataSource().getContainerPropertyIds());
         List<Object> newGroupProps = Arrays.asList(newGroupProperties);
 
         allProps.removeAll(newGroupProps);
@@ -404,6 +378,10 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
 
     @Override
     protected String getGeneratedCellStyle(Object itemId, Object propertyId) {
+        if (!component.getGroupProperties().contains(propertyId)) {
+            return super.getGeneratedCellStyle(itemId, propertyId);
+        }
+
         if (itemId instanceof GroupInfo) {
             List<GroupStyleProvider> groupStyleProviders = null;
 
@@ -440,7 +418,7 @@ public class WebGroupTable<E extends Entity> extends WebAbstractTable<CubaGroupT
 
     @Override
     public Map<Object, Object> getAggregationResults(GroupInfo info) {
-        return component.aggregate(new CubaGroupTable.GroupAggregationContext(component, info));
+        return component.aggregate(new GroupAggregationContext(component, info));
     }
 
     protected class GroupTableDsWrapper extends SortableCollectionDsWrapper

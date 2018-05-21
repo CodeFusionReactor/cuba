@@ -28,10 +28,7 @@ import com.haulmont.cuba.gui.data.CollectionDatasource;
 import com.haulmont.cuba.gui.data.HierarchicalDatasource;
 import com.haulmont.cuba.gui.data.TreeTableDatasource;
 import com.haulmont.cuba.gui.data.impl.CollectionDsListenersWrapper;
-import com.haulmont.cuba.web.gui.data.CollectionDsWrapper;
 import com.haulmont.cuba.web.gui.data.HierarchicalDsWrapper;
-import com.haulmont.cuba.web.gui.data.ItemWrapper;
-import com.haulmont.cuba.web.gui.data.PropertyWrapper;
 import com.haulmont.cuba.web.widgets.CubaTreeTable;
 import com.haulmont.cuba.web.widgets.data.AggregationContainer;
 import com.haulmont.cuba.web.widgets.data.TreeTableContainer;
@@ -83,15 +80,9 @@ public class WebTreeTable<E extends Entity> extends WebAbstractTable<CubaTreeTab
     }
 
     @Override
-    protected CollectionDsWrapper createContainerDatasource(
-            CollectionDatasource datasource, Collection<MetaPropertyPath> columns,
-            CollectionDsListenersWrapper collectionDsListenersWrapper) {
-        return new TreeTableDsWrapper((HierarchicalDatasource) datasource, collectionDsListenersWrapper);
-    }
-
-    @Override
-    public void setIconProvider(IconProvider iconProvider) {
+    public void setIconProvider(IconProvider<? super E>  iconProvider) {
         this.iconProvider = iconProvider;
+        // do not change row header mode
         component.refreshRowCache();
     }
 
@@ -220,6 +211,7 @@ public class WebTreeTable<E extends Entity> extends WebAbstractTable<CubaTreeTab
         return false;
     }
 
+    @SuppressWarnings("deprecation")
     protected class TreeTableDsWrapper
             extends HierarchicalDsWrapper
             implements TreeTableContainer, com.vaadin.v7.data.Container.Sortable, AggregationContainer {
