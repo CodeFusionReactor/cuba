@@ -16,17 +16,13 @@
 
 package com.haulmont.cuba.testmodel.number_id;
 
-import com.haulmont.cuba.core.entity.BaseLongIdEntity;
-
 import javax.persistence.Column;
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
-import javax.persistence.Table;
 
 @DiscriminatorValue("C")
-@Table(name = "TEST_NUMBER_ID_JOINED_CHILD")
-@Entity(name = "test$NumberIdJoinedChild")
-public class NumberIdJoinedChild extends NumberIdJoinedRoot {
+@Entity(name = "test$NumberIdSingleTableChild")
+public class NumberIdSingleTableChild extends NumberIdSingleTableRoot {
 
     @Column(name = "INFO")
     protected String info;

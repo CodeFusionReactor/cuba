@@ -18,7 +18,10 @@ package com.haulmont.cuba.testmodel.number_id;
 
 import com.haulmont.cuba.core.entity.BaseLongIdEntity;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 
 @DiscriminatorValue("R")
 @Table(name = "TEST_NUMBER_ID_SINGLE_TABLE_ROOT")

@@ -19,8 +19,8 @@ package com.haulmont.cuba.core.listener;
 
 import com.haulmont.cuba.core.EntityManager;
 import com.haulmont.cuba.core.entity.Server;
-
 import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.List;
 

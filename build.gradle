@@ -337,7 +337,8 @@ configure(globalModule) {
     }
 
     entitiesEnhancing {
-        enhanceMain = true
+        main {
+        }
     }
 
     task filterDummyEntities {
@@ -439,6 +440,11 @@ configure(coreModule) {
         moduleAlias = '10-cuba'
     }
 
+    entitiesEnhancing {
+        test {
+        }
+    }
+
     task deploy(dependsOn: assemble, type: CubaDeployment) {
         appName = 'cuba-core'
         appJars('cuba-global', 'cuba-core')
@@ -508,10 +514,6 @@ configure(coreTestsModule) {
     artifacts {
         archives sourceJar
     }
-
-    entitiesEnhancing {
-        enhanceTest = true
-    }
 }
 
 configure(clientModule) {
@@ -554,7 +556,8 @@ configure(guiModule) {
     }
 
     entitiesEnhancing {
-        enhanceMain = true
+        main {
+        }
     }
 
     test {
@@ -636,7 +639,8 @@ configure(webModule) {
     }
 
     entitiesEnhancing {
-        enhanceMain = true
+        main {
+        }
     }
 
     task buildScssThemes(type: CubaWebScssThemeCreation) {

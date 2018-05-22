@@ -19,8 +19,8 @@ package com.haulmont.cuba.core.listener;
 
 import com.haulmont.cuba.core.Persistence;
 import com.haulmont.cuba.core.entity.Server;
-
 import org.springframework.stereotype.Component;
+
 import javax.inject.Inject;
 import java.sql.Connection;
 import java.util.ArrayList;

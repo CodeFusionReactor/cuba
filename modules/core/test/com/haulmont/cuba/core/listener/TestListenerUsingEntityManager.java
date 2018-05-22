@@ -21,8 +21,8 @@ import com.haulmont.cuba.core.EntityManager;
 import com.haulmont.cuba.core.Persistence;
 import com.haulmont.cuba.core.entity.FileDescriptor;
 import com.haulmont.cuba.core.entity.Server;
-
 import org.springframework.stereotype.Component;
+
 import javax.inject.Inject;
 import java.util.UUID;
 

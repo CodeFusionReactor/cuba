@@ -18,16 +18,13 @@
 package com.haulmont.cuba.core.listener;
 
 import com.haulmont.bali.db.QueryRunner;
-import com.haulmont.cuba.core.EntityManager;
 import com.haulmont.cuba.core.Persistence;
-import com.haulmont.cuba.core.Query;
 import com.haulmont.cuba.core.entity.Server;
 import com.haulmont.cuba.core.global.AppBeans;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 

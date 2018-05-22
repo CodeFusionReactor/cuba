@@ -22,8 +22,9 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 
 @DiscriminatorValue("C")
-@Entity(name = "test$NumberIdSingleTableChild")
-public class NumberIdSingleTableChild extends NumberIdSingleTableRoot {
+@Table(name = "TEST_NUMBER_ID_JOINED_CHILD")
+@Entity(name = "test$NumberIdJoinedChild")
+public class NumberIdJoinedChild extends NumberIdJoinedRoot {
 
     @Column(name = "INFO")
     protected String info;
