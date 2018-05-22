@@ -675,6 +675,8 @@ configure(webModule) {
 
     task enhance(type: CubaEnhancing)
 
+    task enhanceTestModel(type: CubaTestEnhancing)
+
     task buildScssThemes(type: CubaWebScssThemeCreation) {
         themes = ['halo'
                   /* vaadin8 , 'havana'*/]
