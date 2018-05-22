@@ -29,6 +29,7 @@ import org.apache.commons.collections4.CollectionUtils;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("deprecation")
 public class CubaGroupTable extends CubaTable implements GroupTableContainer {
@@ -75,7 +76,7 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
             newDataSource = new IndexedContainer();
         }
 
-        super.setContainerDataSource(new GroupTableContainerWrapper(newDataSource));
+        super.setContainerDataSource(new GroupTableContainerWrapper((GroupTableContainer) newDataSource));
     }
 
     @Override
@@ -83,11 +84,11 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
         super.paintContent(target);
 
         if (hasGroups()) {
-            final Collection groupProperties = getGroupProperties();
-            final String[] groupColumns = new String[groupProperties.size()];
+            Collection groupProperties = getGroupProperties();
+            String[] groupColumns = new String[groupProperties.size()];
 
             int index = 0;
-            for (final Object groupColumnId : groupProperties) {
+            for (Object groupColumnId : groupProperties) {
                 groupColumns[index++] = _columnIdMap().key(groupColumnId);
             }
             target.addVariable(this, "groupColumns", groupColumns);
@@ -108,8 +109,8 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
         } else if (variables.containsKey("groupedcolumns")) {
             focus();
 
-            final Object[] ids = (Object[]) variables.get("groupedcolumns");
-            final Object[] groupProperties = new Object[ids.length];
+            Object[] ids = (Object[]) variables.get("groupedcolumns");
+            Object[] groupProperties = new Object[ids.length];
             for (int i = 0; i < ids.length; i++) {
                 groupProperties[i] = _columnIdMap().get(ids[i].toString());
             }
@@ -128,7 +129,7 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
         }
 
         if (variables.containsKey("collapsedcolumns")) {
-            final Object[] ids = (Object[]) variables
+            Object[] ids = (Object[]) variables
                     .get("collapsedcolumns");
             Set<Object> idSet = new HashSet<>();
             for (Object id : ids) {
@@ -136,7 +137,7 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
             }
 
             boolean needToRegroup = false;
-            final List<Object> groupProperties = new ArrayList<>(getGroupProperties());
+            List<Object> groupProperties = new ArrayList<>(getGroupProperties());
             for (int index = 0; index < groupProperties.size(); index++) {
                 final Object propertyId = groupProperties.get(index);
                 if (idSet.contains(propertyId)) {
@@ -279,11 +280,9 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
     @Override
     protected Collection<?> getAggregationItemIds() {
         if (hasGroups()) {
-            List itemIds = new LinkedList();
-            for (final Object groupId : rootGroups()) {
-                itemIds.addAll(getGroupItemIds(groupId));
-            }
-            return itemIds;
+            return rootGroups().stream()
+                    .flatMap(groupId -> getGroupItemIds(groupId).stream())
+                    .collect(Collectors.toList());
         } else {
             return items.getItemIds();
         }
@@ -293,8 +292,8 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
             throws PaintException {
         boolean paintGroupProperty = false;
 
-        final Collection groupProperties = getGroupProperties();
-        final Object groupProperty = getGroupProperty(groupId);
+        Collection groupProperties = getGroupProperties();
+        Object groupProperty = getGroupProperty(groupId);
 
         for (final Object columnId : _visibleColumns()) {
             if (columnId == null || isColumnCollapsed(columnId)) {
@@ -310,7 +309,7 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
 
             if (getCellStyleGenerator() != null) {
                 String cellStyle = getCellStyleGenerator().getStyle(this, null, columnId);
-                if (cellStyle != null && !cellStyle.equals("")) {
+                if (cellStyle != null && !cellStyle.isEmpty()) {
                     target.addAttribute("style-" + _columnIdMap().key(columnId), cellStyle + "-ag");
                 }
             }
@@ -327,26 +326,22 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
     @Override
     protected LinkedHashSet<Object> getItemIdsInRange(Object startItemId, final int length) {
         Set<Object> rootIds = super.getItemIdsInRange(startItemId, length);
-        LinkedHashSet<Object> ids = new LinkedHashSet<>();
-        for (Object itemId: rootIds) {
-            // actual implementation moved to WebGroupTable
-            ids.add(itemId);
-        }
-        return ids;
+        // actual implementation moved to WebGroupTable
+        return new LinkedHashSet<>(rootIds);
     }
 
     @Override
     protected boolean isColumnNeedsToRefreshRendered(Object colId) {
-        final GroupTableContainer items = (GroupTableContainer) this.items;
-        final boolean groupped = items.hasGroups();
+        GroupTableContainer items = (GroupTableContainer) this.items;
+        boolean groupped = items.hasGroups();
 
         return !groupped || !getGroupProperties().contains(colId);
     }
 
     @Override
     protected boolean isItemNeedsToRefreshRendered(Object itemId) {
-        final GroupTableContainer items = (GroupTableContainer) this.items;
-        final boolean groupped = items.hasGroups();
+        GroupTableContainer items = (GroupTableContainer) this.items;
+        boolean groupped = items.hasGroups();
 
         return !groupped || !items.isGroup(itemId);
     }
@@ -358,7 +353,7 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
     }
 
     protected void expandAllInGroup(Object id, boolean rerender) {
-        final int pageIndex = getCurrentPageFirstItemIndex();
+        int pageIndex = getCurrentPageFirstItemIndex();
         expandAllInGroup(id);
         if (isMultiSelect()) {
             selectAllInGroup(id);
@@ -387,7 +382,7 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
     }
 
     protected void expand(Object id, boolean rerender) {
-        final int pageIndex = getCurrentPageFirstItemIndex();
+        int pageIndex = getCurrentPageFirstItemIndex();
         ((GroupTableContainer) items).expand(id);
         setCurrentPageFirstItemIndex(pageIndex, false);
         if (rerender) {
@@ -398,7 +393,7 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
     }
 
     protected void collapse(Object id, boolean rerender) {
-        final int pageIndex = getCurrentPageFirstItemIndex();
+        int pageIndex = getCurrentPageFirstItemIndex();
         ((GroupTableContainer) items).collapse(id);
         setCurrentPageFirstItemIndex(pageIndex, false);
         if (rerender) {
@@ -436,17 +431,19 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
         if (!_columnGenerators().isEmpty()) {
             List<Object> notGeneratedGroupProps = new ArrayList<>();
             for (Object id : groupProperties) {
-                if (!_columnGenerators().containsKey(id) || isNonGeneratedProperty(id))
+                if (!_columnGenerators().containsKey(id) || isNonGeneratedProperty(id)) {
                     notGeneratedGroupProps.add(id);
+                }
             }
             return notGeneratedGroupProps;
-        } else
+        } else {
             return groupProperties;
+        }
     }
 
     @Override
     public void expandAll() {
-        final int pageIndex = getCurrentPageFirstItemIndex();
+        int pageIndex = getCurrentPageFirstItemIndex();
         ((GroupTableContainer) items).expandAll();
         setCurrentPageFirstItemIndex(pageIndex, false);
         resetPageBuffer();
@@ -461,7 +458,7 @@ public class CubaGroupTable extends CubaTable implements GroupTableContainer {
 
     @Override
     public void collapseAll() {
-        final int pageIndex = getCurrentPageFirstItemIndex();
+        int pageIndex = getCurrentPageFirstItemIndex();
         ((GroupTableContainer) items).collapseAll();
         setCurrentPageFirstItemIndex(pageIndex, false);
         resetPageBuffer();

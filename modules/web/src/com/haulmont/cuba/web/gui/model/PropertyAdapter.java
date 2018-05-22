@@ -30,12 +30,11 @@ import com.haulmont.cuba.gui.model.impl.WeakItemChangeListener;
 import com.haulmont.cuba.gui.model.impl.WeakItemPropertyChangeListener;
 import com.haulmont.cuba.web.gui.data.AbstractPropertyWrapper;
 import com.haulmont.cuba.web.gui.data.UnsubscribableDsWrapper;
-import com.haulmont.cuba.web.widgets.data.PropertyValueStringify;
 import com.vaadin.v7.data.util.converter.Converter;
 
 import java.text.ParseException;
 
-public class PropertyAdapter extends AbstractPropertyWrapper implements PropertyValueStringify, UnsubscribableDsWrapper {
+public class PropertyAdapter extends AbstractPropertyWrapper implements UnsubscribableDsWrapper {
 
     protected MetaPropertyPath propertyPath;
 
@@ -138,11 +137,6 @@ public class PropertyAdapter extends AbstractPropertyWrapper implements Property
     @Override
     public Class getType() {
         return propertyPath.getRangeJavaClass();
-    }
-
-    @Override
-    public String getFormattedValue() {
-        return metadataTools.format(getValue(), propertyPath.getMetaProperty());
     }
 
     @SuppressWarnings("unchecked")

@@ -80,6 +80,8 @@ public interface TableSource<I> {
 
     interface Sortable<T> extends Ordered<T> {
         void sort(Object[] propertyId, boolean[] ascending);
+
+        void resetSortOrder();
     }
 
     // todo

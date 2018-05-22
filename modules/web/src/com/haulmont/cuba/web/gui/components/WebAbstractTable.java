@@ -16,6 +16,7 @@
  */
 package com.haulmont.cuba.web.gui.components;
 
+import com.google.common.base.Strings;
 import com.haulmont.bali.util.Dom4j;
 import com.haulmont.bali.util.Preconditions;
 import com.haulmont.chile.core.datatypes.Datatype;
@@ -290,7 +291,6 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         }
     }
 
-
     @Override
     public void setSelected(E item) {
         if (item == null) {
@@ -465,12 +465,15 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         columns.remove(column.getId());
         columnsOrder.remove(column);
 
+        // vaadin8 it seems that it is not required
         if (!(component.getContainerDataSource() instanceof com.vaadin.v7.data.Container.ItemSetChangeNotifier)) {
             component.refreshRowCache();
         }
+
         column.setOwner(null);
     }
 
+    // vaadin8 rework this cache
     @SuppressWarnings("unchecked")
     @Override
     public Datasource getItemDatasource(Entity item) {
@@ -1030,26 +1033,21 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         if (styleProviders == null) {
             return null;
         }
-
         TableSource<E> tableSource = getTableSource();
         if (tableSource == null) {
             return null;
         }
 
         E item = tableSource.getItem(itemId);
-        StringBuilder joinedStyle = null;
-        for (StyleProvider styleProvider : styleProviders) {
-            String styleName = styleProvider.getStyleName(item, propertyId == null ? null : propertyId.toString());
-            if (styleName != null) {
-                if (joinedStyle == null) {
-                    joinedStyle = new StringBuilder(styleName);
-                } else {
-                    joinedStyle.append(" ").append(styleName);
-                }
-            }
-        }
 
-        return joinedStyle != null ? joinedStyle.toString() : null;
+        String propertyStringId = propertyId == null ? null : propertyId.toString();
+
+        String joinedStyle = styleProviders.stream()
+                .map(sp -> sp.getStyleName(item, propertyStringId))
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining(" "));
+
+        return Strings.emptyToNull(joinedStyle);
     }
 
     @Override
@@ -1092,9 +1090,8 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
                 Window.Lookup lookup = (Window.Lookup) window;
 
                 com.haulmont.cuba.gui.components.Component lookupComponent = lookup.getLookupComponent();
-                if (lookupComponent != this)
-                    action.actionPerform(WebAbstractTable.this);
-                else if (action.getId().equals(WindowDelegate.LOOKUP_ITEM_CLICK_ACTION_ID)) {
+                if (lookupComponent != this
+                        || WindowDelegate.LOOKUP_ITEM_CLICK_ACTION_ID.equals(action.getId())) {
                     action.actionPerform(WebAbstractTable.this);
                 }
             }
@@ -1599,14 +1596,12 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
 
     @Override
     public int getRowHeaderWidth() {
-        // CAUTION: vaadin considers null as row header property id;
-        return component.getColumnWidth(null);
+        return component.getColumnWidth(ROW_HEADER_PROPERTY_ID);
     }
 
     @Override
     public void setRowHeaderWidth(int width) {
-        // CAUTION: vaadin considers null as row header property id;
-        component.setColumnWidth(null, width);
+        component.setColumnWidth(ROW_HEADER_PROPERTY_ID, width);
     }
 
     @Override
@@ -1658,7 +1653,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
     }
 
     protected void applyColumnSettings(Element element) {
-        final Element columnsElem = element.element("columns");
+        Element columnsElem = element.element("columns");
 
         Object[] oldColumns = component.getVisibleColumns();
         List<Object> newColumns = new ArrayList<>();
@@ -2161,7 +2156,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
     }
 
     protected Map<Object, Object> __aggregate(AggregationContainer container, AggregationContainer.Context context) {
-        List<AggregationInfo> aggregationInfos = new LinkedList<>();
+        List<AggregationInfo> aggregationInfos = new ArrayList<>();
         for (Object propertyId : container.getAggregationPropertyIds()) {
             Table.Column column = columns.get(propertyId);
             AggregationInfo aggregation = column.getAggregation();
@@ -2245,8 +2240,7 @@ public abstract class WebAbstractTable<T extends com.vaadin.v7.ui.Table & CubaEn
         boolean needReload = false;
 
         if (isUsePresentations() && presentations != null) {
-
-            final Presentations p = getPresentations();
+            Presentations p = getPresentations();
 
             if (p.getCurrent() != null && p.isAutoSave(p.getCurrent()) && needUpdatePresentation(variables)) {
                 Element e = p.getSettings(p.getCurrent());

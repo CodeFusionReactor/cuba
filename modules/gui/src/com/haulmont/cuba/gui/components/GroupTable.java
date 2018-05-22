@@ -29,6 +29,7 @@ public interface GroupTable<E extends Entity> extends Table<E> {
 
     String NAME = "groupTable";
 
+    // todo default method
     @Override
     GroupDatasource getDatasource();
 
