@@ -302,10 +302,8 @@ configure(globalModule) {
         compile(bom['org.antlr:antlr-runtime'])
         compile(bom['com.google.guava:guava'])
 
-        compile(bom['org.eclipse.persistence:javax.persistence'])
-        compile(bom['org.eclipse.persistence:commonj.sdo'])
-        compile(bom['org.glassfish:javax.json'])
-        compile(bom['com.haulmont.thirdparty:eclipselink'])
+        compile(bom['org.eclipse.persistence:org.eclipse.persistence.jpa'])
+        compile(bom['org.eclipse.persistence:org.eclipse.persistence.oracle'])
 
         compile(bom['org.freemarker:freemarker'])
         compile(bom['aopalliance:aopalliance'])
